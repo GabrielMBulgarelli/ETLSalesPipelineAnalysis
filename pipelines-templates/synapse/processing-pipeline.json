@@ -1,0 +1,30 @@
+{
+    "name": "processing-pipeline",
+    "properties": {
+        "activities": [
+            {
+                "name": "Execute Processing Notebook",
+                "type": "SynapseNotebook",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "notebook": {
+                        "referenceName": "02_EcomSales_Processed_Transform",
+                        "type": "NotebookReference"
+                    },
+                    "sparkPool": {
+                        "referenceName": "ecomsparkpool",
+                        "type": "BigDataPoolReference"
+                    }
+                }
+            }
+        ]
+    }
+}

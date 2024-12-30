@@ -1,0 +1,126 @@
+# ---------------------------------
+# 1. AUTHENTICATION
+# ---------------------------------
+# Login to Azure - replace with your tenant ID
+az login --tenant "your-tenant-id"
+
+# ---------------------------------
+# 2. RESOURCE GROUP
+# ---------------------------------
+# Create main resource group in West US 2
+az group create --name ecom-rg-main --location westus2
+
+# ---------------------------------
+# 3. STORAGE ACCOUNT
+# ---------------------------------
+# Create ADLS Gen2 storage account with hierarchical namespace
+az storage account create \
+  --name ecomsalessa \
+  --resource-group ecom-rg-main \
+  --location westus2 \
+  --sku Standard_LRS \
+  --kind StorageV2 \
+  --enable-hierarchical-namespace true \
+  --access-tier Hot
+
+# Get storage account key (for later use)
+key=$(az storage account keys list \
+  --account-name ecomsalessa \
+  --resource-group ecom-rg-main \
+  --query "[0].value" -o tsv)
+
+# Create data lake containers for the ETL layers
+az storage container create --name raw --account-name ecomsalessa
+az storage container create --name processed --account-name ecomsalessa
+az storage container create --name curated --account-name ecomsalessa
+
+# ---------------------------------
+# 4. SYNAPSE WORKSPACE
+# ---------------------------------
+# Create Synapse workspace linked to the storage account
+az synapse workspace create \
+  --name ecom-synapse \
+  --resource-group ecom-rg-main \
+  --storage-account ecomsalessa \
+  --file-system raw \
+  --sql-admin-login-user ecomsqladmin \
+  --sql-admin-login-password "YourStrongPassword123!" \
+  --location westus2
+
+# Get Synapse workspace ID (for reference or RBAC)
+az synapse workspace list --resource-group ecom-rg-main --output table
+
+# Finds own IP address
+curl https://ifconfig.me
+
+# Configure firewall to allow connections
+az synapse workspace firewall-rule create \
+  --name myClientIP \
+  --workspace-name ecom-synapse \
+  --resource-group ecom-rg-main \
+  --start-ip-address <0.0.0.0> \
+  --end-ip-address <255.255.255.255>
+
+# ---------------------------------
+# 5. COMPUTE RESOURCES
+# ---------------------------------
+# Create Spark pool for data processing
+az synapse spark pool create \
+  --name ecomsparkpool \
+  --workspace-name ecom-synapse \
+  --resource-group ecom-rg-main \
+  --node-count 3 \
+  --node-size Small \
+  --spark-version 3.4 \
+  --enable-auto-scale true \
+  --min-node-count 3 \
+  --max-node-count 10 \
+  --delay 120
+
+# Create dedicated SQL pool for analytics
+az synapse sql pool create \
+  --name ecomsqlpool \
+  --performance-level DW100c \
+  --workspace-name ecom-synapse \
+  --resource-group ecom-rg-main
+
+# ---------------------------------
+# 6. KEY VAULT & SECURITY
+# ---------------------------------
+# Create Key Vault for storing secrets
+az keyvault create \
+  --name ecom-sales-kv \
+  --resource-group ecom-rg-main \
+  --location westus2
+
+# Store storage account key in Key Vault
+storageKey=$(az storage account keys list \
+  --account-name ecomsalessa \
+  --resource-group ecom-rg-main \
+  --query "[0].value" -o tsv)
+
+az keyvault secret set \
+  --vault-name ecom-sales-kv \
+  --name ecomsalessa-key \
+  --value "$storageKey"
+
+# ---------------------------------
+# 7. RBAC & PERMISSIONS
+# ---------------------------------
+# Get Synapse managed identity ID
+SYNAPSE_ID=$(az synapse workspace show \
+  --name ecom-synapse \
+  --resource-group ecom-rg-main \
+  --query "identity.principalId" --output tsv)
+
+# Get subscription ID
+SUBSCRIPTION_ID=$(az account show --query "id" --output tsv)
+
+# Define storage account resource ID
+STORAGE_SCOPE="/subscriptions/$SUBSCRIPTION_ID/resourceGroups/ecom-rg-main/providers/Microsoft.Storage/storageAccounts/ecomsalessa"
+
+# Assign Storage Blob Data Contributor role to Synapse
+az role assignment create \
+  --assignee $SYNAPSE_ID \
+  --role "Storage Blob Data Contributor" \
+  --scope $STORAGE_SCOPE

@@ -1,0 +1,12 @@
+# Credentials
+*.key
+*.pem
+*.env
+*.ps1
+*.sh
+
+# Notebook output
+.ipynb_checkpoints/
+
+# Configuration with secrets
+config.json
