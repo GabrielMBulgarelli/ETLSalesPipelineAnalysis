@@ -1,0 +1,60 @@
+{
+    "name": "master-ecommerce-pipeline",
+    "properties": {
+        "activities": [
+            {
+                "name": "Execute Raw Ingestion",
+                "type": "ExecutePipeline",
+                "dependsOn": [],
+                "userProperties": [],
+                "typeProperties": {
+                    "pipeline": {
+                        "referenceName": "raw-ingestion-pipeline",
+                        "type": "PipelineReference"
+                    },
+                    "waitOnCompletion": true
+                }
+            },
+            {
+                "name": "Execute Processing",
+                "type": "ExecutePipeline",
+                "dependsOn": [
+                    {
+                        "activity": "Execute Raw Ingestion",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "pipeline": {
+                        "referenceName": "processing-pipeline",
+                        "type": "PipelineReference"
+                    },
+                    "waitOnCompletion": true
+                }
+            },
+            {
+                "name": "Execute Curated Analytics",
+                "type": "ExecutePipeline",
+                "dependsOn": [
+                    {
+                        "activity": "Execute Processing",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "pipeline": {
+                        "referenceName": "curated-analytics-pipeline",
+                        "type": "PipelineReference"
+                    },
+                    "waitOnCompletion": true
+                }
+            }
+        ]
+    }
+}
