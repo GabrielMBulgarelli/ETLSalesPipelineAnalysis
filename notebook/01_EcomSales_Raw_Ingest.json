@@ -1,0 +1,180 @@
+{
+	"name": "01_EcomSales_Raw_Ingest",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "ecomsparkpool",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"runAsWorkspaceSystemIdentity": true,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "dea780e2-cf6f-4301-9901-ff1c02ebcc13"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"synapse_widget": {
+				"version": "0.1"
+			},
+			"enableDebugMode": false,
+			"language_info": {
+				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/1f5a1e96-1fba-43b7-a3e4-fb07642bf63e/resourceGroups/ecom-rg-main/providers/Microsoft.Synapse/workspaces/ecom-synapse/bigDataPools/ecomsparkpool",
+				"name": "ecomsparkpool",
+				"type": "Spark",
+				"endpoint": "https://ecom-synapse.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/ecomsparkpool",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net",
+					"authHeader": null
+				},
+				"sparkVersion": "3.4",
+				"nodeCount": 3,
+				"cores": 4,
+				"memory": 28,
+				"extraHeader": null
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"## Data Ingestion: ADLS to Processed\n",
+					"### Step 1: Import dependencies and Fetch credentials"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# Install Kaggle API (only needed once)\n",
+					"!pip install kaggle\n",
+					"\n",
+					"# Import necessary libraries\n",
+					"import os\n",
+					"from pyspark.sql import SparkSession\n",
+					"\n",
+					"# Initialize Spark Session\n",
+					"spark = SparkSession.builder.getOrCreate()\n",
+					"\n",
+					"# Retrieve Kaggle API credentials from Azure Key Vault\n",
+					"kaggle_credential = mssparkutils.credentials.getSecret(\"ecom-sales-kv\", \"KaggleAPI\")\n",
+					"\n",
+					"# Save Kaggle API credentials securely\n",
+					"kaggle_json_path = \"/tmp/kaggle.json\"\n",
+					"with open(kaggle_json_path, \"w\") as f:\n",
+					"    f.write(kaggle_credential)\n",
+					"\n",
+					"# Set permissions and environment variable for Kaggle\n",
+					"!chmod 600 /tmp/kaggle.json\n",
+					"os.environ['KAGGLE_CONFIG_DIR'] = '/tmp'"
+				],
+				"execution_count": 28
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"### Step 2: Download dataset from Kaggle"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"download_path = \"/synfs/tmp\"\n",
+					"os.system(f\"kaggle datasets download -d olistbr/brazilian-ecommerce --unzip -p {download_path}\")"
+				],
+				"execution_count": 29
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"### Define modular function for ADLS Path"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# Step 2: Define a function for generating ADLS paths\n",
+					"def get_adls_path(container: str, folder: str) -> str:\n",
+					"    \"\"\"\n",
+					"    Generate an ADLS path based on the container and folder.\n",
+					"    \n",
+					"    Parameters:\n",
+					"        container (str): The ADLS container (e.g., 'raw', 'processed', 'curated').\n",
+					"        folder (str): The folder path inside the container.\n",
+					"    \n",
+					"    Returns:\n",
+					"        str: The formatted ADLS path.\n",
+					"    \"\"\"\n",
+					"    storage_account = \"ecomsalessa\"\n",
+					"    return f\"abfss://{container}@{storage_account}.dfs.core.windows.net/{folder}/\"\n",
+					""
+				],
+				"execution_count": 30
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"### Step 3: Upload files to ADLS using mssparkutils"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"adls_path = get_adls_path(\"raw\", \"ecommerce-dataset\")\n",
+					"\n",
+					"for file in os.listdir(download_path):\n",
+					"    local_file_path = os.path.join(download_path, file)\n",
+					"    adls_file_path = os.path.join(adls_path, file)\n",
+					"\n",
+					"    if os.path.isfile(local_file_path):\n",
+					"        print(f\"Uploading {file} to ADLS...\")\n",
+					"        mssparkutils.fs.cp(f\"file://{local_file_path}\", adls_file_path, recurse=True)\n",
+					"\n",
+					"print(\"Upload completed successfully.\")"
+				],
+				"execution_count": 31
+			}
+		]
+	}
+}
