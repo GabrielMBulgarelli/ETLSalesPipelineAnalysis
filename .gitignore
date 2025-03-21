@@ -4,9 +4,12 @@
 *.env
 *.ps1
 *.sh
+*.puml
 
 # Notebook output
 .ipynb_checkpoints/
+notebooks/output/parquets
+out/
 
 # Configuration with secrets
 config.json

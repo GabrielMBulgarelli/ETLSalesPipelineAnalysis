@@ -1,130 +1,182 @@
-# E-Commerce Sales Analysis and Optimization using Azure ETL
+# <span style="font-size: 28px;">E-Commerce Sales Analysis and Optimization using Azure Synapse Analytics</span>
 
 ## Overview
 
-This project is centered around developing an extensive Extract, Transform, and Load (ETL) pipeline utilizing the advanced capabilities of Microsoft Azure. The pipeline efficiently retrieves data from Azure Blob Storage, performs necessary transformations using Azure Databricks and Azure Data Factory, and stores it in Azure Data Lake. It handles various data formats, including Delta and Parquet, ensuring flexibility and efficiency in data management. Additionally, the pipeline features a sales analysis component using PySpark within Azure Databricks, enabling comprehensive examination and analysis of sales data. The final analyzed data is securely stored in a SQL layer for subsequent use. This holistic solution streamlines the data processing workflow and provides actionable insights from the transformed and analyzed data, enhancing decision-making processes.
+This project implements a comprehensive Extract, Transform, and Load (ETL) pipeline leveraging the advanced capabilities of Azure Synapse Analytics. The pipeline efficiently extracts data from the Brazilian e-commerce dataset (Olist), performs sophisticated transformations through PySpark notebooks, and implements a three-layer data lakehouse architecture using Azure Data Lake Storage Gen2. The solution incorporates dimensional modeling techniques to create analytics-ready data structures stored in both Delta format for data lake querying and synced to dedicated SQL pools for enterprise reporting. Through this approach, the pipeline delivers actionable sales insights that enhance inventory management, marketing optimization, and overall business decision-making processes.
 
 ## Dataset
 
-The [dataset](https://www.kaggle.com/datasets/thedevastator/unlock-profits-with-e-commerce-sales-data?select=Amazon+Sale+Report.csv) used in this project contains detailed information on e-commerce sales transactions for Amazon India, including customer demographics, product categories, order details, payment methods, and shipping information, allowing for in-depth analysis of sales patterns, customer behavior, and profitability in an e-commerce setting.
+The [dataset](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) used in this project contains comprehensive information on Brazilian e-commerce transactions from Olist, with approximately 100,000 orders spanning 2016-2018. It includes detailed order information, product categories, customer demographics, shipping details, payment methods, and customer reviews, allowing for in-depth analysis of sales patterns, customer behavior, and operational efficiency in a real-world e-commerce environment.
+
+<div align="center">
+  <img src="images/dataset_schema_overview.png" alt="Dataset Schema Overview" width="850">
+  <p><i>Figure 1: Overview of the Olist dataset schema showing entity relationships and table structures</i></p>
+</div>
+
+The dataset schema above illustrates the complex relationships between the various tables in the Olist dataset, including customers, orders, products, sellers, and reviews. Understanding these relationships is crucial for building an effective dimensional model.
 
 ## Prerequisites
 
 1. **Microsoft Azure Subscription**
-2. **Azure Blob Storage**: A service providing scalable object storage for large amounts of unstructured data, ideal for storing images, videos, and other binary data.
-3. **Azure Data Lake Gen2 Storage**: A highly scalable storage solution designed specifically for big data analytics, combining the capabilities of Azure Blob Storage and Azure Data Lake.
-4. **Azure Databricks**: An advanced analytics platform based on Apache Spark, designed for big data processing, machine learning, and collaborative data science projects.
-5. **Azure SQL Server**: A fully managed relational database service that utilizes the SQL Server engine to provide high-performance, reliable data storage and processing.
-6. **Azure SQL Database**: A managed relational database service offering compatibility with the SQL Server engine, providing scalable and secure database solutions for modern applications.
-7. **Azure Data Factory**: A comprehensive data integration service that allows for the creation, scheduling, and orchestration of ETL (Extract, Transform, Load) and ELT (Extract, Load, Transform) workflows, featuring a visually intuitive interface for building data-driven workflows to move and transform data at scale.
+2. **Azure Data Lake Storage Gen2**: A hierarchical namespace-enabled storage solution optimized for analytics workloads, providing the foundation for the data lakehouse architecture with enhanced performance and cost-effectiveness.
+3. **Azure Synapse Analytics**: An integrated analytics service that brings together enterprise data warehousing and big data analytics, with dedicated SQL pools for high-performance queries and serverless SQL pools for flexible data exploration.
+4. **Azure Synapse Spark Pools**: Apache Spark runtime environment within Synapse for scalable data processing and machine learning workloads, supporting Python, Scala, and SQL.
+5. **Azure Key Vault**: Secure storage for sensitive credentials and connection strings, enabling safe access to Kaggle APIs and data sources.
+6. **Azure Synapse Pipelines**: Orchestration service for coordinating data movement and transformation activities, scheduling notebook execution, and implementing monitoring capabilities.
 
-## Data flow:
+## Data Architecture
 
-1. **Extract Data**: Retrieve CSV data from Azure Blob Storage for processing and load it to Azure Data Lake Storage Gen-2
-2. **Transform Data**: Utilize PySpark on Azure Databricks to analyze and process the data, storing the results in Azure Data Lake Storage Gen2
-3. **Load Data**: Transfer the processed data into an Azure SQL database to establish a reporting layer for dashboard creation
-4. **Automation**: Construct end-to-end pipelines in Azure Data Factory to automate the data flow from extraction to reporting layers
+The project implements a three-layer data lakehouse architecture:
 
-<div style="text-align:center;">
-  <img src="images/Flow.png" width = "900" height = "500">
+1. **Raw Layer**: Original, immutable data ingested from Kaggle stored in its native format
+2. **Processed Layer**: Cleansed data with standardized structures, data type conversions, and quality validations
+3. **Curated Layer**: Business-ready dimensional model with fact and dimension tables supporting analytics use cases
+
+## Data Flow
+
+The ETL pipeline consists of sequential stages that transform raw e-commerce data into analytics-ready insights:
+
+1. **Extract Data**: Retrieve e-commerce data from Kaggle using secure API integration, landing raw files in the Data Lake's raw zone
+2. **Process Data**: Transform raw data through Spark notebooks, implementing data quality checks, standardization, and feature engineering in the processed layer
+3. **Curate Models**: Develop dimensional models (star schema) with fact and dimension tables optimized for analytical queries in the curated layer
+4. **Load to SQL**: Populate dedicated SQL pools with the dimensional model for enterprise reporting and dashboard creation
+5. **Automation**: Orchestrate the end-to-end pipeline in Synapse Pipelines with parameterized execution, error handling, and monitoring
+
+<div align="center">
+  <img src="images/Flow.png" alt="ETL Data Flow" width="850">
+  <p><i>Figure 2: End-to-end ETL data flow showing movement from raw data through to analytics consumption</i></p>
 </div>
 
-## Setup and Configuration
+The flow diagram above illustrates how data moves through the three architectural layers, with raw data being extracted from Kaggle, transformed through a series of processing steps, and ultimately surfaced as analytics-ready insights in both Delta tables and SQL pools.
 
-### Azure Blob Storage
-1. Create a container in your Azure Blob Storage account
-2. Upload your input data files to the container
+## Dimensional Model
 
-### Azure Data Lake Storage
-1. Create a file system in your Azure Data Lake Storage account
-2. Create a directory in the file system to store the processed Parquet files
+The project implements a comprehensive star schema design for analytics optimization. The dimensional model consists of fact tables that capture business metrics and dimension tables that provide contextual attributes for analysis.
 
-### Azure Databricks
-1. Create and configure a cluster with the necessary dependencies and settings for Python and PySpark.
-2. In our case, I have used created a cluster with the configuration: 9.1 LTS (includes Apache Spark 3.1.2, Scala 2.12)
-3. Create a new notebook in your Azure Databricks workspace
-
-#### Azure SQL Database
-1. Create a SQL database in Azure
-2. Create the necessary tables in the database to store the processed data
-
-#### Azure Data Factory
-1. Create a new pipeline in your Azure Data Factory instance
-2. Create a link service for each of the Azure functionalities used. I have created a Linked Service for: Azure Blob Storage, Azure Data Lake Gen2 Storage, Azure Databricks, and Azure SQL
-3. Add activities to the pipeline for each step of the workflow:
-   a. Data copy from Azure Blob Storage to Azure Data Lake Storage
-   b. Data processing in Azure Databricks
-   c. Data copy from Azure Data Lake Storage to Azure SQL Database
-4. Running the Pipeline:
-   a. Trigger the "Run All Pipelines" pipeline run in Azure Data Factory
-   b. Monitor the pipeline run to ensure that each step completes successfully
-
-### Pipeline #1: Copy Data from Blob to ADLS
-
-<div style="text-align:center;">
-  <img src= "images/blob-adls-pipeline.png" width = "600" height = "500">
+<div align="center">
+  <img src="images/dimensions_facts_tables.svg" alt="Dimensional Model" width="850">
+  <p><i>Figure 3: Star schema dimensional model showing fact tables and their relationships with dimension tables</i></p>
 </div>
 
-### Pipeline #2: Trigger all Databricks Notebook Runs
+The dimensional model diagram illustrates how our fact tables (`fact_sales` and `fact_reviews`) connect to dimension tables (`dim_customer`, `dim_product`, `dim_seller`, `dim_geography`, and `dim_date`). This structure enables efficient querying for business intelligence applications and supports complex analytical queries with optimal performance.
 
-<div style="text-align:center;">
-  <img src= "images/databricks-pipeline.png">
+## Aggregation Tables
+
+To enhance query performance and support common analytical patterns, the pipeline creates pre-aggregated tables that summarize data at various levels of granularity:
+
+<div align="center">
+  <img src="images/aggregation_tables.svg" alt="Aggregation Tables" width="850">
+  <p><i>Figure 4: Aggregation table structure showing summarized data for common analytical scenarios</i></p>
 </div>
 
-### Pipeline #3: Copy Data from ADLS to SQL DB
+These aggregation tables provide pre-computed metrics for geographic analysis, temporal trends, product category performance, and seller effectiveness. By materializing these common aggregations, the solution dramatically improves query response times for dashboards and reports while reducing computational load on the analytical systems.
 
-<div style="text-align:center;">
-  <img src= "images/sql-db-pipeline.png">
+## Notebook Pipeline
+
+The transformation logic is implemented through a sequence of PySpark notebooks in Azure Synapse Analytics. Each notebook handles specific aspects of the data processing pipeline:
+
+<div align="center">
+  <img src="images/simplified_notebook_pipeline.png" alt="Notebook Pipeline" width="850">
+  <p><i>Figure 5: Sequential execution flow of Synapse notebooks showing transformation stages and dependencies</i></p>
 </div>
 
-### Pipeline #4: Trigger all Pipelines
+This pipeline diagram shows the logical flow and dependencies between notebooks, illustrating how data progresses from initial extraction through transformation stages to final analytical outputs. The modular design allows for isolated testing, reusability, and maintenance of individual transformation components.
 
-<div style="text-align:center;">
-  <img src= "images/trigger-all-pipelines.png">
-</div>
+The notebook pipeline implements:
+- Data extraction and initial validation
+- Schema standardization and data cleansing
+- Feature engineering and enrichment
+- Dimensional model creation
+- Analytics view generation
 
-### Monitoring Pipeline Run
+## <span style="font-size: 24px;">Analysis</span>
 
-<div style="text-align:center;">
-  <img src= "images/pipeline-run.png">
-</div>
+In this project, we conduct a comprehensive analysis of Brazilian e-commerce sales data using dimensional modeling techniques. Our analysis leverages the star schema design to explore key analytical dimensions that provide actionable insights across different aspects of the e-commerce business.
 
-## Analysis
+### <span style="font-size: 20px;">Analysis #1: Geographic Sales Distribution</span>
 
-In this project, we conduct a comprehensive analysis of e-commerce sales data to gain insights into various aspects of the business. Our analysis covers six key areas: Statewise Sales Analysis, Categorywise Sales Analysis, Promotion Impact Analysis, Cancellation Impact Analysis, Size-wise Sales Analysis, and International Orders Analysis. Each analysis provides detailed metrics such as the number of orders, sales quantity, sales amount, and the impact of promotions and cancellations on sales. 
+This [analysis](notebooks/output/csvs/agg_sales_by_state) provides a detailed breakdown of sales data across Brazilian states. It includes metrics such as order density, sales volume, average order value, and market penetration rates per geographic region. The insights enable targeted regional marketing campaigns, logistics optimization, and strategic expansion planning based on localized customer behaviors and preferences.
 
-The data is further broken down by categories, sizes, and regions to understand customer preferences, regional sales trends, and the popularity of different products. This in-depth analysis helps in making informed decisions for inventory management, marketing strategies, and international expansion to optimize sales performance and cater to customer demands effectively.
+### <span style="font-size: 20px;">Analysis #2: Product Category Performance</span>
 
-### Analysis #1: Statewise Sales Analysis
+This [analysis](notebooks/output/csvs/agg_sales_by_category) examines performance metrics across product categories within the marketplace. It includes measures for category revenue, order frequency, and product popularity rankings. These insights support product assortment planning, pricing strategy optimization, and promotional calendar development to maximize category revenue and profitability.
 
-This [analysis](output/csv/state-analysis.csv) provides a detailed breakdown of sales data across various states in India. It includes metrics such as the number of orders, sales quantity, total sales amount, average order quantity, and average sales amount per state. The data helps in understanding regional sales trends, customer preferences, and the overall performance of sales in different states, aiding in strategic decision-making for targeted marketing and sales optimization efforts 
+### <span style="font-size: 20px;">Analysis #3: Monthly Sales Trends</span>
 
-### Analysis-2: Categorywise Sales Analysis
+This [analysis](notebooks/output/csvs/agg_monthly_sales) provides temporal insights into sales patterns across months and seasons. It includes metrics on monthly revenue, order volume, and average ticket value. The data helps identify seasonality, growth trends, and anomalies, enabling more effective sales forecasting, promotion planning, and inventory management.
 
-This [analysis](output/csv/category-analysis.csv) provides insights into sales data categorized by different types of apparel. It includes metrics such as the number of orders, sales quantity, total sales amount, average order quantity, and average sales amount for each category. This data helps in understanding the popularity and performance of each category, aiding in inventory management, marketing strategies, and product development to meet customer demands and preferences effectively.
+### <span style="font-size: 20px;">Analysis #4: Order Status Analysis</span>
 
-### Analysis-3: Promotion Impact Analysis
+This [analysis](notebooks/output/csvs/agg_order_status) examines the distribution and impact of different order statuses on the business. It includes metrics on order fulfillment rates, cancellation frequency, and status transition times. These insights help optimize the order fulfillment process, reduce cancellations, and improve the overall customer experience.
 
-This [analysis](output/csv/promotion-analysis.csv) examines the impact of promotions on sales across different apparel categories. It includes metrics such as the number of orders with and without promotions, quantity sold with and without promotions, the impact of promotions on quantity sold, sales with and without promotions, and the percentage impact of promotions on sales. This data helps in evaluating the effectiveness of promotional strategies, understanding the influence of promotions on customer purchasing behavior, and making informed decisions for future promotional campaigns to boost sales and revenue.
+### <span style="font-size: 20px;">Analysis #5: Cross-State Commerce Analysis</span>
 
-### Analysis-4: Cancellation Impact Analysis
+This [analysis](notebooks/output/csvs/agg_cross_state_analysis) investigates the patterns of interstate commerce, tracking orders where customers and sellers are in different states. It includes metrics on cross-state shipping volume, delivery times, and regional interconnections. The insights enable logistics optimization, shipping cost management, and strategic decisions about seller recruitment in underserved regions.
 
-This [analysis](output/csv/cancellation-analysis.csv) assesses the impact of order cancellations on sales across different apparel categories. It includes metrics such as the number of cancelled and not cancelled orders, cancelled and not cancelled quantity, the impact of cancellations on quantity, cancelled and not cancelled sales amount, and the percentage impact of cancellations on sales. This data helps in understanding the extent to which cancellations affect sales, identifying patterns or reasons behind cancellations, and developing strategies to minimize cancellations and their impact on overall sales and revenue.
+### <span style="font-size: 20px;">Analysis #6: Seller Performance Metrics</span>
 
-### Analysis-5: Size-wise Sales Analysis
+This [analysis](notebooks/output/csvs/agg_seller_performance) evaluates marketplace seller performance across multiple dimensions. It includes metrics on seller order volume, customer satisfaction scores, delivery efficiency, and revenue generation. These insights support seller relationship management, performance-based incentives, and targeted interventions to improve overall marketplace quality.
 
-This analysis provides insights into sales data categorized by different sizes for various apparel categories. The data is presented in two tables:
+### <span style="font-size: 20px;">Analysis #7: Product Size Impact Analysis</span>
 
-**Size Sale Amount Analysis**:
+This [analysis](notebooks/output/csvs/agg_size_analysis) examines how product size attributes influence sales performance across categories. It tracks metrics on size-specific order volumes, revenue contribution, and customer preferences. The insights help optimize inventory stocking by size, inform product development decisions, and create more effective merchandising strategies that align with customer size preferences.
 
-This [analysis](output/csv/size-sales-analysis.csv) displays the sales amount for each size across different categories. The data helps in understanding the revenue generated from each size and identifying popular sizes among customers for each category.
+## <span style="font-size: 24px;">Dimensional Tables</span>
 
-**Size Sale Quantity Analysis**:
+The project creates a standard set of dimension tables to support the analytical models:
 
-This [analysis](output/csv/size-quantity-analysis.csv) shows the quantity sold for each size across the same categories. It helps in analyzing the demand and popularity of specific sizes among customers, aiding in inventory management and production planning to meet the market demand effectively.
+<table width="100%" border="1" style="font-size: 16px;">
+  <tr>
+    <th align="left">Dimension</th>
+    <th align="left">Description</th>
+  </tr>
+  <tr>
+    <td><a href="notebooks/output/csvs/dim_customer">Customer Dimension</a></td>
+    <td>Contains customer demographic information, location data, and customer segmentation attributes</td>
+  </tr>
+  <tr>
+    <td><a href="notebooks/output/csvs/dim_product">Product Dimension</a></td>
+    <td>Stores product details including category hierarchies, physical attributes, and pricing information</td>
+  </tr>
+  <tr>
+    <td><a href="notebooks/output/csvs/dim_seller">Seller Dimension</a></td>
+    <td>Includes seller profiles, performance metrics, and geographic location</td>
+  </tr>
+  <tr>
+    <td><a href="notebooks/output/csvs/dim_geography">Geography Dimension</a></td>
+    <td>Maintains hierarchical location data with state, city, and postal code relationships</td>
+  </tr>
+  <tr>
+    <td><a href="notebooks/output/csvs/dim_date">Date Dimension</a></td>
+    <td>Provides calendar-related attributes for time-based analysis</td>
+  </tr>
+</table>
 
-Overall, this size-wise sales analysis assists in making informed decisions regarding product sizing, inventory stocking, and marketing strategies to cater to customer preferences and optimize sales performance.
+## <span style="font-size: 24px;">Fact Tables</span>
 
-### Analysis-6: International Orders Analysis
+The core transaction data is stored in two primary fact tables:
 
-This [analysis](output/csv/international-analysis.csv) focuses on international orders across different apparel categories and includes metrics such as the number of orders and sales amount for various categories that were shipped outside India. This data helps in understanding the global demand for different categories, aiding in strategic planning for international expansion and marketing efforts to capture a wider customer base and increase sales in the international market.
+<table width="100%" border="1" style="font-size: 16px;">
+  <tr>
+    <th align="left">Fact Table</th>
+    <th align="left">Description</th>
+  </tr>
+  <tr>
+    <td><a href="notebooks/output/csvs/fact_sales">Sales Fact Table</a></td>
+    <td>Contains order-level transactional data with foreign keys to all relevant dimensions</td>
+  </tr>
+  <tr>
+    <td><a href="notebooks/output/csvs/fact_reviews">Reviews Fact Table</a></td>
+    <td>Stores customer review information linked to orders and products</td>
+  </tr>
+</table>
+
+These fact tables form the foundation of the dimensional model, connecting the "facts" of business events with the contextual dimensions that describe them.
+
+## Future Enhancements
+
+Potential extensions to this project include:
+- Inclusion of interactive Fabric Power BI dashboards on descriptions
+- Implementation of machine learning models for demand forecasting and customer segmentation
+- Integration with real-time data sources for near-real-time analytics
+- Implementation of automated alerting based on key performance indicators

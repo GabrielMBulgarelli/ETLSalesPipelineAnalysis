@@ -84,6 +84,12 @@ az synapse sql pool create \
   --workspace-name ecom-synapse \
   --resource-group ecom-rg-main
 
+# Pause it to not incur additional costs after use
+az synapse sql pool pause \
+  --name ecomsqlpool \
+  --workspace-name ecom-synapse \
+  --resource-group ecom-rg-main
+
 # ---------------------------------
 # 6. KEY VAULT & SECURITY
 # ---------------------------------
