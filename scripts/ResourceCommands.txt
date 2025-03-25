@@ -21,7 +21,7 @@ az storage account create \
   --sku Standard_LRS \
   --kind StorageV2 \
   --enable-hierarchical-namespace true \
-  --access-tier Hot
+  --access-tier Cool
 
 # Get storage account key (for later use)
 key=$(az storage account keys list \

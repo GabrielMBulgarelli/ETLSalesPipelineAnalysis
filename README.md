@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project implements a comprehensive Extract, Transform, and Load (ETL) pipeline leveraging the advanced capabilities of Azure Synapse Analytics. The pipeline efficiently extracts data from the Brazilian e-commerce dataset (Olist), performs sophisticated transformations through PySpark notebooks, and implements a three-layer data lakehouse architecture using Azure Data Lake Storage Gen2. The solution incorporates dimensional modeling techniques to create analytics-ready data structures stored in both Delta format for data lake querying and synced to dedicated SQL pools for enterprise reporting. Through this approach, the pipeline delivers actionable sales insights that enhance inventory management, marketing optimization, and overall business decision-making processes.
+This project implements a comprehensive Extract, Transform, and Load (ETL) pipeline leveraging the advanced capabilities of Azure Synapse Analytics. The pipeline efficiently extracts data from the Brazilian e-commerce dataset (Olist), performs sophisticated transformations through PySpark notebooks, and implements a three-layer data lakehouse architecture using Azure Data Lake Storage Gen2. The solution incorporates dimensional modeling techniques to create analytics-ready data structures stored for data lake querying and synced to a dedicated SQL pool for enterprise reporting. Through this approach, the pipeline delivers actionable sales insights that enhance inventory management, marketing optimization, and overall business decision-making processes.
 
 ## Dataset
 
@@ -40,14 +40,13 @@ The ETL pipeline consists of sequential stages that transform raw e-commerce dat
 2. **Process Data**: Transform raw data through Spark notebooks, implementing data quality checks, standardization, and feature engineering in the processed layer
 3. **Curate Models**: Develop dimensional models (star schema) with fact and dimension tables optimized for analytical queries in the curated layer
 4. **Load to SQL**: Populate dedicated SQL pools with the dimensional model for enterprise reporting and dashboard creation
-5. **Automation**: Orchestrate the end-to-end pipeline in Synapse Pipelines with parameterized execution, error handling, and monitoring
 
 <div align="center">
-  <img src="images/Flow.png" alt="ETL Data Flow" width="850">
+  <img src="images/architecture-flow.svg" alt="ETL Data Flow" width="850">
   <p><i>Figure 2: End-to-end ETL data flow showing movement from raw data through to analytics consumption</i></p>
 </div>
 
-The flow diagram above illustrates how data moves through the three architectural layers, with raw data being extracted from Kaggle, transformed through a series of processing steps, and ultimately surfaced as analytics-ready insights in both Delta tables and SQL pools.
+The flow diagram above illustrates how data moves through the three architectural layers, with raw data being extracted from Kaggle, transformed through a series of processing steps, and ultimately surfaced as analytics-ready insights in a Dedicated SQL pool.
 
 ## Dimensional Model
 
@@ -177,6 +176,7 @@ These fact tables form the foundation of the dimensional model, connecting the "
 
 Potential extensions to this project include:
 - Inclusion of interactive Fabric Power BI dashboards on descriptions
+- Inclusion of Delta tables for BI Analysis
 - Implementation of machine learning models for demand forecasting and customer segmentation
 - Integration with real-time data sources for near-real-time analytics
 - Implementation of automated alerting based on key performance indicators
