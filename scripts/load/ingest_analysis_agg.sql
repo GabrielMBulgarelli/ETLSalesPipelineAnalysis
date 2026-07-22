@@ -1,6 +1,6 @@
 -- Fact: Sales By Category
 COPY INTO ecom.FactSalesByCategory (
-    CategoryKey,
+    ProductCategoryNameEnglish,
     OrdersCount,
     UniqueCustomers,
     TotalSales,
@@ -18,7 +18,7 @@ WITH (
 
 -- Fact: Size Analysis
 COPY INTO ecom.FactSizeAnalysis (
-    CategoryKey,
+    ProductCategoryNameEnglish,
     SizeCategory,
     OrdersCount,
     TotalSales,
@@ -87,7 +87,7 @@ WITH (
 
 -- Fact: Cross State Analysis
 COPY INTO ecom.FactCrossStateAnalysis (
-    CategoryKey,
+    ProductCategoryNameEnglish,
     IsCrossState,
     OrdersCount,
     TotalSales,
@@ -104,7 +104,7 @@ WITH (
 
 -- Fact: Payment Analysis
 COPY INTO ecom.FactPaymentAnalysis (
-    PaymentTypeKey,
+    PaymentType,
     OrdersCount,
     TotalSales,
     AvgOrderValue,
@@ -112,6 +112,22 @@ COPY INTO ecom.FactPaymentAnalysis (
     LastUpdated
 )
 FROM 'https://ecomsalessa.dfs.core.windows.net/curated/ecommerce-dataset-l1/aggregates/payment_methods/'
+WITH (
+    FILE_TYPE = 'PARQUET',
+    CREDENTIAL = (IDENTITY='Managed Identity'),
+    MAXERRORS = 10
+);
+
+-- Fact: Order Status Analysis
+COPY INTO ecom.FactOrderStatusAnalysis (
+    ProductCategoryNameEnglish,
+    OrderStatus,
+    OrdersCount,
+    TotalSales,
+    UniqueCustomers,
+    LastUpdated
+)
+FROM 'https://ecomsalessa.dfs.core.windows.net/curated/ecommerce-dataset-l1/aggregates/order_status/'
 WITH (
     FILE_TYPE = 'PARQUET',
     CREDENTIAL = (IDENTITY='Managed Identity'),

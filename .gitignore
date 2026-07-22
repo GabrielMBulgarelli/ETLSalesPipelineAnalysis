@@ -12,3 +12,7 @@ out/
 
 # Configuration with secrets
 config.json
+
+# Python bytecode
+__pycache__/
+*.py[cod]

@@ -29,12 +29,21 @@ BEGIN
         
     IF OBJECT_ID('ecom.FactPaymentAnalysis', 'U') IS NOT NULL
         DROP TABLE ecom.FactPaymentAnalysis;
+
+    IF OBJECT_ID('ecom.FactOrderStatusAnalysis', 'U') IS NOT NULL
+        DROP TABLE ecom.FactOrderStatusAnalysis;
         
     IF OBJECT_ID('ecom.FactSales', 'U') IS NOT NULL
         DROP TABLE ecom.FactSales;
         
     IF OBJECT_ID('ecom.FactReviews', 'U') IS NOT NULL
         DROP TABLE ecom.FactReviews;
+
+    IF OBJECT_ID('ecom.StageFactSales', 'U') IS NOT NULL
+        DROP TABLE ecom.StageFactSales;
+
+    IF OBJECT_ID('ecom.StageFactReviews', 'U') IS NOT NULL
+        DROP TABLE ecom.StageFactReviews;
     
     -- Drop dimension tables
     IF OBJECT_ID('ecom.DimCustomer', 'U') IS NOT NULL
@@ -202,6 +211,43 @@ CREATE TABLE ecom.FactReviews (
     CONSTRAINT PK_FactReviews PRIMARY KEY NONCLUSTERED (ReviewKey) NOT ENFORCED
 ) WITH (DISTRIBUTION = HASH(OrderID), CLUSTERED COLUMNSTORE INDEX);
 
+-- Curated Parquet contains business identifiers. Stage first, then resolve
+-- current dimension surrogate keys before inserting into the warehouse facts.
+CREATE TABLE ecom.StageFactSales (
+    OrderID VARCHAR(100) NOT NULL,
+    OrderItemID INT NOT NULL,
+    CustomerID VARCHAR(100) NOT NULL,
+    ProductID VARCHAR(100) NOT NULL,
+    SellerID VARCHAR(100) NOT NULL,
+    DateKey INT NOT NULL,
+    StatusID VARCHAR(50) NOT NULL,
+    ZipCodePrefix INT NULL,
+    OrderPurchaseTimestamp DATETIME,
+    OrderDeliveredCustomerDate DATETIME,
+    Price DECIMAL(10,2) NOT NULL,
+    FreightValue DECIMAL(10,2) NOT NULL,
+    TotalItemValue DECIMAL(10,2) NOT NULL,
+    ShippingDays INT,
+    DeliveryDays INT,
+    TotalDays INT,
+    IsDelayed BIT,
+    DelayDays INT,
+    IsCrossState BIT NOT NULL,
+    PaymentType VARCHAR(50)
+) WITH (DISTRIBUTION = ROUND_ROBIN, HEAP);
+
+CREATE TABLE ecom.StageFactReviews (
+    OrderID VARCHAR(100) NOT NULL,
+    ReviewID VARCHAR(100) NOT NULL,
+    CustomerID VARCHAR(100) NOT NULL,
+    DateKey INT NOT NULL,
+    ReviewScore INT NOT NULL,
+    ReviewCommentMessage NVARCHAR(4000),
+    ReviewCreationDate DATETIME,
+    ReviewAnswerTimestamp DATETIME,
+    ReviewResponseDays INT
+) WITH (DISTRIBUTION = ROUND_ROBIN, HEAP);
+
 -- ===============================
 -- AGGREGATION TABLES
 -- ===============================
@@ -290,6 +336,17 @@ CREATE TABLE ecom.FactPaymentAnalysis (
     LastUpdated DATETIME NOT NULL,
     CONSTRAINT PK_FactPaymentAnalysis PRIMARY KEY NONCLUSTERED (PaymentKey) NOT ENFORCED
 ) WITH (DISTRIBUTION = HASH(PaymentType), CLUSTERED COLUMNSTORE INDEX);
+
+CREATE TABLE ecom.FactOrderStatusAnalysis (
+    OrderStatusKey INT IDENTITY(1,1) NOT NULL,
+    ProductCategoryNameEnglish VARCHAR(100) NOT NULL,
+    OrderStatus VARCHAR(50) NOT NULL,
+    OrdersCount INT NOT NULL,
+    TotalSales DECIMAL(15,2) NOT NULL,
+    UniqueCustomers INT NOT NULL,
+    LastUpdated DATETIME NOT NULL,
+    CONSTRAINT PK_FactOrderStatusAnalysis PRIMARY KEY NONCLUSTERED (OrderStatusKey) NOT ENFORCED
+) WITH (DISTRIBUTION = HASH(ProductCategoryNameEnglish), CLUSTERED COLUMNSTORE INDEX);
 
 -- ===============================
 -- DIMENSION DATA LOADING
@@ -435,7 +492,7 @@ SELECT
     d.Month,
     d.MonthName,
     c.CustomerState,
-    COUNT(*) AS OrderCount,
+    COUNT(DISTINCT fs.OrderID) AS OrderCount,
     SUM(fs.TotalItemValue) AS TotalSales
 FROM 
     ecom.FactSales fs
@@ -452,7 +509,7 @@ CREATE VIEW ecom.VW_ProductCategorySales
 AS
 SELECT 
     p.ProductCategoryNameEnglish,
-    COUNT(*) AS OrderCount,
+    COUNT(DISTINCT fs.OrderID) AS OrderCount,
     SUM(fs.TotalItemValue) AS TotalSales,
     AVG(fs.Price) AS AvgPrice
 FROM 

@@ -1,12 +1,12 @@
-COPY INTO ecom.FactSizeAnalysis (
+COPY INTO ecom.FactOrderStatusAnalysis (
     ProductCategoryNameEnglish,
-    SizeCategory,
+    OrderStatus,
     OrdersCount,
     TotalSales,
-    AvgShippingCost,
+    UniqueCustomers,
     LastUpdated
 )
-FROM 'https://ecomsalessa.dfs.core.windows.net/curated/ecommerce-dataset-l1/aggregates/size_analysis/'
+FROM 'https://ecomsalessa.dfs.core.windows.net/curated/ecommerce-dataset-l1/aggregates/order_status/'
 WITH (
     FILE_TYPE = 'PARQUET',
     CREDENTIAL = (IDENTITY='Managed Identity'),

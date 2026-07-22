@@ -1,5 +1,5 @@
 COPY INTO ecom.FactSalesByCategory (
-    CategoryKey,
+    ProductCategoryNameEnglish,
     OrdersCount,
     UniqueCustomers,
     TotalSales,

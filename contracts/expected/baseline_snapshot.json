@@ -1,0 +1,559 @@
+{
+  "batch_timestamp": "2018-04-01T00:00:00Z",
+  "curated": {
+    "aggregations": {
+      "cross_state_analysis": [
+        {
+          "AvgDeliveryTime": "4.00",
+          "DelayRate": "0.00",
+          "IsCrossState": false,
+          "LastUpdated": "2018-04-01T00:00:00Z",
+          "OrdersCount": 1,
+          "ProductCategoryNameEnglish": "books",
+          "TotalSales": "80.00"
+        },
+        {
+          "AvgDeliveryTime": "7.00",
+          "DelayRate": "1.00",
+          "IsCrossState": true,
+          "LastUpdated": "2018-04-01T00:00:00Z",
+          "OrdersCount": 1,
+          "ProductCategoryNameEnglish": "furniture",
+          "TotalSales": "200.00"
+        },
+        {
+          "AvgDeliveryTime": "4.00",
+          "DelayRate": "0.00",
+          "IsCrossState": true,
+          "LastUpdated": "2018-04-01T00:00:00Z",
+          "OrdersCount": 1,
+          "ProductCategoryNameEnglish": "uncategorized",
+          "TotalSales": "40.00"
+        }
+      ],
+      "monthly_sales": [
+        {
+          "AvgItemPrice": "60.00",
+          "LastUpdated": "2018-04-01T00:00:00Z",
+          "Month": 1,
+          "OrdersCount": 1,
+          "TotalSales": "120.00",
+          "UniqueCustomers": 1,
+          "Year": 2018
+        },
+        {
+          "AvgItemPrice": "200.00",
+          "LastUpdated": "2018-04-01T00:00:00Z",
+          "Month": 2,
+          "OrdersCount": 1,
+          "TotalSales": "200.00",
+          "UniqueCustomers": 1,
+          "Year": 2018
+        }
+      ],
+      "order_status": [
+        {
+          "LastUpdated": "2018-04-01T00:00:00Z",
+          "OrderStatus": "DELIVERED",
+          "OrdersCount": 1,
+          "ProductCategoryNameEnglish": "books",
+          "TotalSales": "80.00",
+          "UniqueCustomers": 1
+        },
+        {
+          "LastUpdated": "2018-04-01T00:00:00Z",
+          "OrderStatus": "DELIVERED",
+          "OrdersCount": 1,
+          "ProductCategoryNameEnglish": "furniture",
+          "TotalSales": "200.00",
+          "UniqueCustomers": 1
+        },
+        {
+          "LastUpdated": "2018-04-01T00:00:00Z",
+          "OrderStatus": "DELIVERED",
+          "OrdersCount": 1,
+          "ProductCategoryNameEnglish": "uncategorized",
+          "TotalSales": "40.00",
+          "UniqueCustomers": 1
+        }
+      ],
+      "payment_methods": [
+        {
+          "AvgOrderValue": "200.00",
+          "LastUpdated": "2018-04-01T00:00:00Z",
+          "OrdersCount": 1,
+          "PaymentType": "boleto",
+          "TotalSales": "200.00",
+          "UniqueCustomers": 1
+        },
+        {
+          "AvgOrderValue": "120.00",
+          "LastUpdated": "2018-04-01T00:00:00Z",
+          "OrdersCount": 1,
+          "PaymentType": "credit_card",
+          "TotalSales": "120.00",
+          "UniqueCustomers": 1
+        }
+      ],
+      "sales_by_category": [
+        {
+          "AvgDeliveryTime": "4.00",
+          "AvgItemPrice": "80.00",
+          "DelayedOrders": 0,
+          "LastUpdated": "2018-04-01T00:00:00Z",
+          "OrdersCount": 1,
+          "ProductCategoryNameEnglish": "books",
+          "TotalSales": "80.00",
+          "UniqueCustomers": 1
+        },
+        {
+          "AvgDeliveryTime": "7.00",
+          "AvgItemPrice": "200.00",
+          "DelayedOrders": 1,
+          "LastUpdated": "2018-04-01T00:00:00Z",
+          "OrdersCount": 1,
+          "ProductCategoryNameEnglish": "furniture",
+          "TotalSales": "200.00",
+          "UniqueCustomers": 1
+        },
+        {
+          "AvgDeliveryTime": "4.00",
+          "AvgItemPrice": "40.00",
+          "DelayedOrders": 0,
+          "LastUpdated": "2018-04-01T00:00:00Z",
+          "OrdersCount": 1,
+          "ProductCategoryNameEnglish": "uncategorized",
+          "TotalSales": "40.00",
+          "UniqueCustomers": 1
+        }
+      ],
+      "sales_by_state": [
+        {
+          "AvgDeliveryTime": "7.00",
+          "AvgItemPrice": "200.00",
+          "CustomerState": "RJ",
+          "LastUpdated": "2018-04-01T00:00:00Z",
+          "OrdersCount": 1,
+          "TotalSales": "200.00",
+          "UniqueCustomers": 1
+        },
+        {
+          "AvgDeliveryTime": "4.00",
+          "AvgItemPrice": "60.00",
+          "CustomerState": "SP",
+          "LastUpdated": "2018-04-01T00:00:00Z",
+          "OrdersCount": 1,
+          "TotalSales": "120.00",
+          "UniqueCustomers": 1
+        }
+      ],
+      "seller_performance": [
+        {
+          "AvgDeliveryTime": "5.50",
+          "AvgShippingCost": "15.00",
+          "DelayRate": "0.50",
+          "DelayedOrders": 1,
+          "LastUpdated": "2018-04-01T00:00:00Z",
+          "OrdersCount": 2,
+          "SellerID": "s1",
+          "SellerState": "SP",
+          "TotalSales": "280.00"
+        },
+        {
+          "AvgDeliveryTime": "4.00",
+          "AvgShippingCost": "5.00",
+          "DelayRate": "0.00",
+          "DelayedOrders": 0,
+          "LastUpdated": "2018-04-01T00:00:00Z",
+          "OrdersCount": 1,
+          "SellerID": "s2",
+          "SellerState": "RJ",
+          "TotalSales": "40.00"
+        }
+      ],
+      "size_analysis": [
+        {
+          "AvgShippingCost": "10.00",
+          "LastUpdated": "2018-04-01T00:00:00Z",
+          "OrdersCount": 1,
+          "ProductCategoryNameEnglish": "books",
+          "SizeCategory": "Small",
+          "TotalSales": "80.00"
+        },
+        {
+          "AvgShippingCost": "20.00",
+          "LastUpdated": "2018-04-01T00:00:00Z",
+          "OrdersCount": 1,
+          "ProductCategoryNameEnglish": "furniture",
+          "SizeCategory": "Large",
+          "TotalSales": "200.00"
+        },
+        {
+          "AvgShippingCost": "5.00",
+          "LastUpdated": "2018-04-01T00:00:00Z",
+          "OrdersCount": 1,
+          "ProductCategoryNameEnglish": "uncategorized",
+          "SizeCategory": "Unknown",
+          "TotalSales": "40.00"
+        }
+      ]
+    },
+    "dimensions": {
+      "dim_customer": {
+        "CurrentFlag": true,
+        "RowEffectiveDate": "2018-04-01T00:00:00Z",
+        "business_keys": [
+          "c1",
+          "c2",
+          "c3"
+        ],
+        "history_behavior": "full-refresh snapshot; operational SCD Type 2 is not implemented",
+        "row_count": 3
+      },
+      "dim_date": {
+        "business_key": "DateKey",
+        "range": [
+          "2018-01-01",
+          "2018-03-01"
+        ],
+        "row_count": 60
+      },
+      "dim_geography": {
+        "CurrentFlag": true,
+        "RowEffectiveDate": "2018-04-01T00:00:00Z",
+        "business_keys": [
+          1000,
+          2000,
+          3000
+        ],
+        "history_behavior": "full-refresh snapshot; operational SCD Type 2 is not implemented",
+        "row_count": 3
+      },
+      "dim_order_status": {
+        "business_keys": [
+          "CREATED",
+          "APPROVED",
+          "SHIPPED",
+          "DELIVERED",
+          "CANCELLED",
+          "UNAVAILABLE"
+        ],
+        "row_count": 6
+      },
+      "dim_product": {
+        "CurrentFlag": true,
+        "RowEffectiveDate": "2018-04-01T00:00:00Z",
+        "business_keys": [
+          "p1",
+          "p2",
+          "p3"
+        ],
+        "history_behavior": "full-refresh snapshot; operational SCD Type 2 is not implemented",
+        "row_count": 3
+      },
+      "dim_seller": {
+        "CurrentFlag": true,
+        "RowEffectiveDate": "2018-04-01T00:00:00Z",
+        "business_keys": [
+          "s1",
+          "s2"
+        ],
+        "history_behavior": "full-refresh snapshot; operational SCD Type 2 is not implemented",
+        "row_count": 2
+      }
+    },
+    "fact_reviews": [
+      {
+        "CustomerID": "c1",
+        "DateKey": 20180101,
+        "OrderID": "o1",
+        "ReviewAnswerTimestamp": "2018-01-07 00:00:00",
+        "ReviewCommentMessage": "Loved it",
+        "ReviewCreationDate": "2018-01-06 00:00:00",
+        "ReviewID": "r1",
+        "ReviewResponseDays": 1,
+        "ReviewScore": 5
+      },
+      {
+        "CustomerID": "c2",
+        "DateKey": 20180201,
+        "OrderID": "o2",
+        "ReviewAnswerTimestamp": "2018-02-12 00:00:00",
+        "ReviewCommentMessage": null,
+        "ReviewCreationDate": "2018-02-09 00:00:00",
+        "ReviewID": "r2",
+        "ReviewResponseDays": 3,
+        "ReviewScore": 2
+      }
+    ],
+    "fact_sales": [
+      {
+        "CustomerID": "c1",
+        "DateKey": 20180101,
+        "DelayDays": 0,
+        "DeliveryDays": 3,
+        "FreightValue": "10.00",
+        "IsCrossState": false,
+        "IsDelayed": false,
+        "OrderDeliveredCustomerDate": "2018-01-05 12:00:00",
+        "OrderID": "o1",
+        "OrderItemID": 1,
+        "OrderPurchaseTimestamp": "2018-01-01 10:00:00",
+        "PaymentType": "credit_card",
+        "Price": "80.00",
+        "ProductID": "p1",
+        "SellerID": "s1",
+        "ShippingDays": 1,
+        "StatusID": "DELIVERED",
+        "TotalDays": 4,
+        "TotalItemValue": "90.00",
+        "ZipCodePrefix": 1000
+      },
+      {
+        "CustomerID": "c1",
+        "DateKey": 20180101,
+        "DelayDays": 0,
+        "DeliveryDays": 3,
+        "FreightValue": "5.00",
+        "IsCrossState": true,
+        "IsDelayed": false,
+        "OrderDeliveredCustomerDate": "2018-01-05 12:00:00",
+        "OrderID": "o1",
+        "OrderItemID": 2,
+        "OrderPurchaseTimestamp": "2018-01-01 10:00:00",
+        "PaymentType": "credit_card",
+        "Price": "40.00",
+        "ProductID": "p2",
+        "SellerID": "s2",
+        "ShippingDays": 1,
+        "StatusID": "DELIVERED",
+        "TotalDays": 4,
+        "TotalItemValue": "45.00",
+        "ZipCodePrefix": 1000
+      },
+      {
+        "CustomerID": "c2",
+        "DateKey": 20180201,
+        "DelayDays": 3,
+        "DeliveryDays": 6,
+        "FreightValue": "20.00",
+        "IsCrossState": true,
+        "IsDelayed": true,
+        "OrderDeliveredCustomerDate": "2018-02-08 15:00:00",
+        "OrderID": "o2",
+        "OrderItemID": 1,
+        "OrderPurchaseTimestamp": "2018-02-01 09:00:00",
+        "PaymentType": "boleto",
+        "Price": "200.00",
+        "ProductID": "p3",
+        "SellerID": "s1",
+        "ShippingDays": 1,
+        "StatusID": "DELIVERED",
+        "TotalDays": 7,
+        "TotalItemValue": "220.00",
+        "ZipCodePrefix": 2000
+      }
+    ]
+  },
+  "metrics": {
+    "cross_state_items": 2,
+    "delayed_items": 1,
+    "gross_item_value": "355.00",
+    "sales_fact_rows": 3,
+    "same_state_items": 1,
+    "unique_sales_orders": 2
+  },
+  "processed": {
+    "category_translation": {
+      "deduplication_key": [
+        "product_category_name"
+      ],
+      "duplicates_removed": 0,
+      "row_count": 2
+    },
+    "customers": {
+      "deduplication_key": [
+        "customer_id"
+      ],
+      "duplicates_removed": 1,
+      "row_count": 3
+    },
+    "geolocation": {
+      "deduplication_key": [
+        "geolocation_zip_code_prefix",
+        "geolocation_lat",
+        "geolocation_lng"
+      ],
+      "duplicates_removed": 0,
+      "row_count": 4
+    },
+    "order_items": {
+      "deduplication_key": [
+        "order_id",
+        "order_item_id"
+      ],
+      "duplicates_removed": 1,
+      "row_count": 4
+    },
+    "order_payments": {
+      "deduplication_key": [
+        "order_id",
+        "payment_sequential"
+      ],
+      "duplicates_removed": 0,
+      "row_count": 4
+    },
+    "order_reviews": {
+      "deduplication_key": [
+        "review_id",
+        "order_id"
+      ],
+      "duplicates_removed": 0,
+      "row_count": 3
+    },
+    "orders": {
+      "deduplication_key": [
+        "order_id"
+      ],
+      "duplicates_removed": 0,
+      "row_count": 3
+    },
+    "products": {
+      "deduplication_key": [
+        "product_id"
+      ],
+      "duplicates_removed": 0,
+      "row_count": 3
+    },
+    "sellers": {
+      "deduplication_key": [
+        "seller_id"
+      ],
+      "duplicates_removed": 0,
+      "row_count": 2
+    }
+  },
+  "quality": {
+    "rejected_rows": 2,
+    "rows": [
+      {
+        "business_key": "missing-order:1",
+        "dataset": "order_items",
+        "reasons": [
+          "orphan_order_item"
+        ]
+      },
+      {
+        "business_key": "r-invalid",
+        "dataset": "order_reviews",
+        "reasons": [
+          "orphan_review",
+          "invalid_review_score"
+        ]
+      }
+    ],
+    "rules": {
+      "invalid_review_score": 1,
+      "orphan_order_item": 1,
+      "orphan_review": 1
+    }
+  },
+  "warehouse": {
+    "fact_reviews": [
+      {
+        "CustomerKey": 1,
+        "DateKey": 20180101,
+        "OrderID": "o1",
+        "ReviewAnswerTimestamp": "2018-01-07 00:00:00",
+        "ReviewCommentMessage": "Loved it",
+        "ReviewCreationDate": "2018-01-06 00:00:00",
+        "ReviewID": "r1",
+        "ReviewResponseDays": 1,
+        "ReviewScore": 5
+      },
+      {
+        "CustomerKey": 2,
+        "DateKey": 20180201,
+        "OrderID": "o2",
+        "ReviewAnswerTimestamp": "2018-02-12 00:00:00",
+        "ReviewCommentMessage": null,
+        "ReviewCreationDate": "2018-02-09 00:00:00",
+        "ReviewID": "r2",
+        "ReviewResponseDays": 3,
+        "ReviewScore": 2
+      }
+    ],
+    "fact_sales": [
+      {
+        "CustomerKey": 1,
+        "DateKey": 20180101,
+        "DelayDays": 0,
+        "DeliveryDays": 3,
+        "FreightValue": "10.00",
+        "GeographyKey": 1,
+        "IsCrossState": false,
+        "IsDelayed": false,
+        "OrderDeliveredCustomerDate": "2018-01-05 12:00:00",
+        "OrderID": "o1",
+        "OrderItemID": 1,
+        "OrderPurchaseTimestamp": "2018-01-01 10:00:00",
+        "PaymentType": "credit_card",
+        "Price": "80.00",
+        "ProductKey": 1,
+        "SellerKey": 1,
+        "ShippingDays": 1,
+        "StatusKey": 4,
+        "TotalDays": 4,
+        "TotalItemValue": "90.00"
+      },
+      {
+        "CustomerKey": 1,
+        "DateKey": 20180101,
+        "DelayDays": 0,
+        "DeliveryDays": 3,
+        "FreightValue": "5.00",
+        "GeographyKey": 1,
+        "IsCrossState": true,
+        "IsDelayed": false,
+        "OrderDeliveredCustomerDate": "2018-01-05 12:00:00",
+        "OrderID": "o1",
+        "OrderItemID": 2,
+        "OrderPurchaseTimestamp": "2018-01-01 10:00:00",
+        "PaymentType": "credit_card",
+        "Price": "40.00",
+        "ProductKey": 2,
+        "SellerKey": 2,
+        "ShippingDays": 1,
+        "StatusKey": 4,
+        "TotalDays": 4,
+        "TotalItemValue": "45.00"
+      },
+      {
+        "CustomerKey": 2,
+        "DateKey": 20180201,
+        "DelayDays": 3,
+        "DeliveryDays": 6,
+        "FreightValue": "20.00",
+        "GeographyKey": 2,
+        "IsCrossState": true,
+        "IsDelayed": true,
+        "OrderDeliveredCustomerDate": "2018-02-08 15:00:00",
+        "OrderID": "o2",
+        "OrderItemID": 1,
+        "OrderPurchaseTimestamp": "2018-02-01 09:00:00",
+        "PaymentType": "boleto",
+        "Price": "200.00",
+        "ProductKey": 3,
+        "SellerKey": 1,
+        "ShippingDays": 1,
+        "StatusKey": 4,
+        "TotalDays": 7,
+        "TotalItemValue": "220.00"
+      }
+    ],
+    "staging": {
+      "fact_reviews": 2,
+      "fact_sales": 3
+    }
+  }
+}

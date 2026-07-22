@@ -1,0 +1,87 @@
+version: 1
+fixture_batch_timestamp: "2018-04-01T00:00:00Z"
+
+# A question mark marks a nullable field. Timestamps use yyyy-MM-dd HH:mm:ss.
+processed:
+  customers:
+    filename: olist_customers_dataset.csv
+    row_count: 3
+    deduplication_key: [customer_id]
+    columns: {customer_id: "string", customer_unique_id: "string", customer_zip_code_prefix: "int", customer_city: "string", customer_state: "string"}
+  orders:
+    filename: olist_orders_dataset.csv
+    row_count: 3
+    deduplication_key: [order_id]
+    columns: {order_id: "string", customer_id: "string", order_status: "string", order_purchase_timestamp: "timestamp", order_approved_at: "timestamp?", order_delivered_carrier_date: "timestamp?", order_delivered_customer_date: "timestamp?", order_estimated_delivery_date: "timestamp?"}
+  order_items:
+    filename: olist_order_items_dataset.csv
+    row_count: 4
+    deduplication_key: [order_id, order_item_id]
+    columns: {order_id: "string", order_item_id: "int", product_id: "string", seller_id: "string", shipping_limit_date: "timestamp", price: "decimal(10,2)", freight_value: "decimal(10,2)"}
+  order_payments:
+    filename: olist_order_payments_dataset.csv
+    row_count: 4
+    deduplication_key: [order_id, payment_sequential]
+    columns: {order_id: "string", payment_sequential: "int", payment_type: "string", payment_installments: "int", payment_value: "decimal(10,2)"}
+  order_reviews:
+    filename: olist_order_reviews_dataset.csv
+    row_count: 3
+    deduplication_key: [review_id, order_id]
+    columns: {review_id: "string", order_id: "string", review_score: "int", review_comment_title: "string?", review_comment_message: "string?", review_creation_date: "timestamp", review_answer_timestamp: "timestamp"}
+  products:
+    filename: olist_products_dataset.csv
+    row_count: 3
+    deduplication_key: [product_id]
+    columns: {product_id: "string", product_category_name: "string?", product_name_lenght: "int?", product_description_lenght: "int?", product_photos_qty: "int?", product_weight_g: "decimal?", product_length_cm: "decimal?", product_height_cm: "decimal?", product_width_cm: "decimal?", product_category_name_english: "string?"}
+  sellers:
+    filename: olist_sellers_dataset.csv
+    row_count: 2
+    deduplication_key: [seller_id]
+    columns: {seller_id: "string", seller_zip_code_prefix: "int", seller_city: "string", seller_state: "string"}
+  geolocation:
+    filename: olist_geolocation_dataset.csv
+    row_count: 4
+    deduplication_key: [geolocation_zip_code_prefix, geolocation_lat, geolocation_lng]
+    columns: {geolocation_zip_code_prefix: "int", geolocation_lat: "decimal", geolocation_lng: "decimal", geolocation_city: "string", geolocation_state: "string"}
+  category_translation:
+    filename: product_category_name_translation.csv
+    row_count: 2
+    deduplication_key: [product_category_name]
+    columns: {product_category_name: "string", product_category_name_english: "string"}
+
+curated:
+  dim_customer: {row_count: 3, business_key: [CustomerID], sql_target: ecom.DimCustomer}
+  dim_product: {row_count: 3, business_key: [ProductID], sql_target: ecom.DimProduct}
+  dim_seller: {row_count: 2, business_key: [SellerID], sql_target: ecom.DimSeller}
+  dim_geography: {row_count: 3, business_key: [ZipCodePrefix], sql_target: ecom.DimGeography}
+  dim_date: {row_count: 60, business_key: [DateKey], sql_target: ecom.DimDate}
+  dim_order_status: {row_count: 6, business_key: [StatusID], sql_target: ecom.DimOrderStatus}
+  fact_sales:
+    row_count: 3
+    grain: [OrderID, OrderItemID]
+    sql_stage: ecom.StageFactSales
+    sql_target: ecom.FactSales
+    columns: [OrderID, OrderItemID, CustomerID, ProductID, SellerID, DateKey, StatusID, ZipCodePrefix, OrderPurchaseTimestamp, OrderDeliveredCustomerDate, Price, FreightValue, TotalItemValue, ShippingDays, DeliveryDays, TotalDays, IsDelayed, DelayDays, IsCrossState, PaymentType]
+  fact_reviews:
+    row_count: 2
+    grain: [OrderID, ReviewID]
+    sql_stage: ecom.StageFactReviews
+    sql_target: ecom.FactReviews
+    columns: [OrderID, ReviewID, CustomerID, DateKey, ReviewScore, ReviewCommentMessage, ReviewCreationDate, ReviewAnswerTimestamp, ReviewResponseDays]
+  aggregations:
+    sales_by_category: {row_count: 3, sql_target: ecom.FactSalesByCategory}
+    sales_by_state: {row_count: 2, sql_target: ecom.FactSalesByState}
+    seller_performance: {row_count: 2, sql_target: ecom.FactSellerPerformance}
+    monthly_sales: {row_count: 2, sql_target: ecom.FactMonthlySales}
+    order_status: {row_count: 3, sql_target: ecom.FactOrderStatusAnalysis}
+    cross_state_analysis: {row_count: 3, sql_target: ecom.FactCrossStateAnalysis}
+    size_analysis: {row_count: 3, sql_target: ecom.FactSizeAnalysis}
+    payment_methods: {row_count: 2, sql_target: ecom.FactPaymentAnalysis}
+
+warehouse:
+  fact_sales: "Resolve CustomerID, ProductID, SellerID, StatusID, and ZipCodePrefix to current surrogate keys after staging."
+  fact_reviews: "Resolve CustomerID to the current CustomerKey after staging."
+  load_mode: full_refresh
+
+payment_semantics: "Choose the row with the lowest payment_sequential per order (payment_type breaks ties); assign that representative type to every item and aggregate item revenue to that type."
+dimension_history: "CurrentFlag and effective dates describe the snapshot only; historical SCD Type 2 is absent."

@@ -1,0 +1,6 @@
+order_id,order_item_id,product_id,seller_id,shipping_limit_date,price,freight_value
+o1,1,p1,s1,2018-01-02 00:00:00,80.00,10.00
+o1,2,p2,s2,2018-01-02 00:00:00,40.00,5.00
+o1,2,p2,s2,2018-01-02 00:00:00,40.00,5.00
+o2,1,p3,s1,2018-02-02 00:00:00,200.00,20.00
+missing-order,1,p1,s1,2018-04-02 00:00:00,10.00,2.00

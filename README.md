@@ -57,7 +57,9 @@ The project implements a comprehensive star schema design for analytics optimiza
   <p><i>Figure 3: Star schema dimensional model showing fact tables and their relationships with dimension tables</i></p>
 </div>
 
-The dimensional model diagram illustrates how our fact tables (`fact_sales` and `fact_reviews`) connect to dimension tables (`dim_customer`, `dim_product`, `dim_seller`, `dim_geography`, and `dim_date`). This structure enables efficient querying for business intelligence applications and supports complex analytical queries with optimal performance.
+The dimensional model diagram illustrates how the sales fact connects to customer, product, seller, geography, date, and order-status dimensions. The sales fact has one row per order item. Reviews are linked to orders and customers, not products; their grain is one row per review.
+
+The Azure baseline is a full-refresh snapshot. The dimension audit columns do not currently implement change detection or historical SCD Type 2 behavior. See [the baseline audit](platforms/azure/baseline.md) for the verified contracts and remaining limitations.
 
 ## Aggregation Tables
 
@@ -94,11 +96,11 @@ In this project, we conduct a comprehensive analysis of Brazilian e-commerce sal
 
 ### <span style="font-size: 20px;">Analysis #1: Geographic Sales Distribution</span>
 
-This [analysis](notebooks/output/csvs/agg_sales_by_state) provides a detailed breakdown of sales data across Brazilian states. It includes metrics such as order density, sales volume, average order value, and market penetration rates per geographic region. The insights enable targeted regional marketing campaigns, logistics optimization, and strategic expansion planning based on localized customer behaviors and preferences.
+This [analysis](notebooks/output/csvs/agg_sales_by_state) provides order count, unique-customer count, item revenue, average item price, and average delivery time by customer state.
 
 ### <span style="font-size: 20px;">Analysis #2: Product Category Performance</span>
 
-This [analysis](notebooks/output/csvs/agg_sales_by_category) examines performance metrics across product categories within the marketplace. It includes measures for category revenue, order frequency, and product popularity rankings. These insights support product assortment planning, pricing strategy optimization, and promotional calendar development to maximize category revenue and profitability.
+This [analysis](notebooks/output/csvs/agg_sales_by_category) provides order count, unique-customer count, item revenue, average item price, average delivery time, and delayed-order count by product category.
 
 ### <span style="font-size: 20px;">Analysis #3: Monthly Sales Trends</span>
 
@@ -106,7 +108,7 @@ This [analysis](notebooks/output/csvs/agg_monthly_sales) provides temporal insig
 
 ### <span style="font-size: 20px;">Analysis #4: Order Status Analysis</span>
 
-This [analysis](notebooks/output/csvs/agg_order_status) examines the distribution and impact of different order statuses on the business. It includes metrics on order fulfillment rates, cancellation frequency, and status transition times. These insights help optimize the order fulfillment process, reduce cancellations, and improve the overall customer experience.
+This [analysis](notebooks/output/csvs/agg_order_status) provides order count, unique-customer count, and item revenue by product category and current order status. It does not model status-transition history.
 
 ### <span style="font-size: 20px;">Analysis #5: Cross-State Commerce Analysis</span>
 
@@ -114,7 +116,7 @@ This [analysis](notebooks/output/csvs/agg_cross_state_analysis) investigates the
 
 ### <span style="font-size: 20px;">Analysis #6: Seller Performance Metrics</span>
 
-This [analysis](notebooks/output/csvs/agg_seller_performance) evaluates marketplace seller performance across multiple dimensions. It includes metrics on seller order volume, customer satisfaction scores, delivery efficiency, and revenue generation. These insights support seller relationship management, performance-based incentives, and targeted interventions to improve overall marketplace quality.
+This [analysis](notebooks/output/csvs/agg_seller_performance) provides order count, item revenue, average freight cost, average delivery time, delayed-order count, and delay rate by seller. Review scores are not included.
 
 ### <span style="font-size: 20px;">Analysis #7: Product Size Impact Analysis</span>
 
@@ -162,11 +164,11 @@ The core transaction data is stored in two primary fact tables:
   </tr>
   <tr>
     <td><a href="notebooks/output/csvs/fact_sales">Sales Fact Table</a></td>
-    <td>Contains order-level transactional data with foreign keys to all relevant dimensions</td>
+    <td>Contains one row per order item with business identifiers in Parquet and resolved surrogate keys in the SQL warehouse</td>
   </tr>
   <tr>
     <td><a href="notebooks/output/csvs/fact_reviews">Reviews Fact Table</a></td>
-    <td>Stores customer review information linked to orders and products</td>
+    <td>Stores one row per review linked to its order and customer; no product relationship is asserted</td>
   </tr>
 </table>
 

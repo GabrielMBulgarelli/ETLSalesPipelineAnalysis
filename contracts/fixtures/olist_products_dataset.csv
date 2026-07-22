@@ -1,0 +1,4 @@
+product_id,product_category_name,product_name_lenght,product_description_lenght,product_photos_qty,product_weight_g,product_length_cm,product_height_cm,product_width_cm
+p1,livros,10,100,1,500,10,5,5
+p2,,20,200,2,,,,
+p3,moveis,30,300,3,9000,30,20,15

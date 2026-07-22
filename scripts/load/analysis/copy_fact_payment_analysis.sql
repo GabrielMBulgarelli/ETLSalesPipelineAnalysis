@@ -1,5 +1,5 @@
 COPY INTO ecom.FactPaymentAnalysis (
-    PaymentTypeKey,
+    PaymentType,
     OrdersCount,
     TotalSales,
     AvgOrderValue,

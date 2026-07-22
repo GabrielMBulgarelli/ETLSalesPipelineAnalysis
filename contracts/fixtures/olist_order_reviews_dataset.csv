@@ -1,0 +1,4 @@
+review_id,order_id,review_score,review_comment_title,review_comment_message,review_creation_date,review_answer_timestamp
+r1,o1,5,Great,Loved it,2018-01-06 00:00:00,2018-01-07 00:00:00
+r2,o2,2,,,2018-02-09 00:00:00,2018-02-12 00:00:00
+r-invalid,missing-order,6,Invalid,Orphan review,2018-04-03 00:00:00,2018-04-04 00:00:00

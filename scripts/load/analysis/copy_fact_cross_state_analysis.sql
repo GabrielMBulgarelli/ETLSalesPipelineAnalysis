@@ -1,5 +1,5 @@
 COPY INTO ecom.FactCrossStateAnalysis (
-    CategoryKey,
+    ProductCategoryNameEnglish,
     IsCrossState,
     OrdersCount,
     TotalSales,
