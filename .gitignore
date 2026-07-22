@@ -7,7 +7,7 @@
 
 # Notebook output
 .ipynb_checkpoints/
-notebooks/output/parquets
+platforms/azure/artifacts/historical/parquets
 out/
 
 # Configuration with secrets
