@@ -15,9 +15,9 @@ The AWS implementation will occupy this reserved space when available, with its 
 
 ## Shared data contract
 
-The provider-neutral contract is [`contracts/contracts.yaml`](contracts/contracts.yaml). Deterministic raw fixtures in [`contracts/fixtures/`](contracts/fixtures/) are compared with [`contracts/expected/baseline_snapshot.json`](contracts/expected/baseline_snapshot.json) by [`scripts/baseline_fixture.py`](scripts/baseline_fixture.py).
+The provider-neutral version 1 contract is split across the raw, processed, and curated catalogs in [`contracts/schemas/`](contracts/schemas/), with quality, grain, referential-integrity, snapshot, and replay policy in [`contracts/rules/`](contracts/rules/). Deterministic raw fixtures in [`contracts/fixtures/`](contracts/fixtures/) are validated against the versioned expectations in [`contracts/expected/`](contracts/expected/) by [`scripts/validate_contracts.py`](scripts/validate_contracts.py).
 
-The sales fact has one row per order item. Reviews are linked to orders and customers, not products. These grains and transformation rules are shared requirements, not Azure-specific behavior. Phase 2 schema and rule namespaces are reserved in [`contracts/schemas/`](contracts/schemas/) and [`contracts/rules/`](contracts/rules/).
+The sales fact has one row per order item. Reviews are linked to orders and customers, not products. These grains and transformation rules are shared requirements, not Azure-specific behavior.
 
 ## Azure implementation
 
@@ -53,21 +53,28 @@ AWS is planned. No AWS runtime, infrastructure deployment, or architecture diagr
 
 ## Local verification
 
-Python 3.10 or newer is sufficient; Azure credentials are not required.
+Python 3.10 or newer is sufficient; Azure credentials are not required. Install the development dependencies, then run the phase gate:
 
 ```bash
-make baseline-test
+python3 -m pip install -r requirements-dev.txt
+make phase-2-test
 ```
 
-This runs the provider-neutral behavioral tests, Azure-specific contract tests, repository-layout and link checks, and a deterministic snapshot comparison. See the [baseline execution guide](platforms/azure/baseline.md) and [Azure baseline audit](platforms/azure/baseline.md) for current evidence and limitations.
+This runs the existing baseline and documentation-link checks followed by provider-neutral contract validation. The validator can also be run directly:
+
+```bash
+python3 scripts/validate_contracts.py --fixture baseline
+```
+
+See the [baseline execution guide](platforms/azure/baseline.md) and [Azure baseline audit](platforms/azure/baseline.md) for current evidence and limitations.
 
 ## Repository layout
 
 ```text
 contracts/              Provider-neutral schemas, rules, fixtures, and expected outputs
-docs/                   Architecture and baseline evidence
+docs/                   Architecture, plans, and baseline evidence
 platforms/azure/        Locally verified Azure implementation
 platforms/aws/          Reserved AWS platform space
-scripts/                Provider-neutral deterministic fixture runner
-tests/         Shared behavioral and repository-layout tests
+scripts/                Deterministic fixture and contract validators
+tests/         Existing behavioral and repository-layout tests
 ```

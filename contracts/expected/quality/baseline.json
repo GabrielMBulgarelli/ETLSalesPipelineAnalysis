@@ -1,0 +1,1 @@
+{"contract_version":1,"fixture":"baseline","source_snapshot":"../baseline_snapshot.json","json_pointer":"/quality","expected_status":"accepted-with-rejections","severity_counts":{"warning":2,"reject-row":3},"rejected_rows":2}

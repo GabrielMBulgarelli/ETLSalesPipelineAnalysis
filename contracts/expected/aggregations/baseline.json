@@ -1,0 +1,1 @@
+{"contract_version":1,"fixture":"baseline","source_snapshot":"../baseline_snapshot.json","json_pointer":"/curated/aggregations","row_counts":{"sales_by_category":3,"sales_by_state":2,"seller_performance":2,"monthly_sales":2,"order_status":3,"cross_state_analysis":3,"size_analysis":3,"payment_methods":2}}

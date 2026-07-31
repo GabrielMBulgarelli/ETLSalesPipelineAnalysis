@@ -1,0 +1,132 @@
+contract_version: 1
+stage: processed
+naming: canonical-snake-case
+timestamp_policy: {source_timezone: UTC, canonical_timezone: UTC, output_format: ISO-8601}
+datasets:
+  customers:
+    business_key: [customer_id]
+    deduplication_key: [customer_id]
+    partition_columns: []
+    fields:
+      - {source_name: customer_id, name: customer_id, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: customer_unique_id, name: customer_unique_id, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: customer_zip_code_prefix, name: customer_zip_code_prefix, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: customer_city, name: customer_city, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: customer_state, name: customer_state, type: string, nullable: false, invalid_behavior: reject-row}
+  orders:
+    business_key: [order_id]
+    deduplication_key: [order_id]
+    partition_columns: []
+    status_derivation:
+      target: order_status
+      source_field: order_status
+      terminal_source_values: {canceled: CANCELLED, cancelled: CANCELLED, unavailable: UNAVAILABLE}
+      timestamp_precedence:
+        - {when_present: order_delivered_customer_date, value: DELIVERED}
+        - {when_present: order_delivered_carrier_date, value: SHIPPED}
+        - {when_present: order_approved_at, value: APPROVED}
+      default: CREATED
+    delivery_metrics:
+      shipping_time_days: [order_approved_at, order_delivered_carrier_date]
+      delivery_time_days: [order_delivered_carrier_date, order_delivered_customer_date]
+      total_delivery_time_days: [order_purchase_timestamp, order_delivered_customer_date]
+      delay_days: [order_estimated_delivery_date, order_delivered_customer_date]
+    fields:
+      - {source_name: order_id, name: order_id, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: customer_id, name: customer_id, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: order_status, name: order_status, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: order_purchase_timestamp, name: order_purchase_timestamp, type: timestamp, nullable: false, invalid_behavior: reject-row}
+      - {source_name: order_approved_at, name: order_approved_at, type: timestamp, nullable: true, invalid_behavior: reject-row}
+      - {source_name: order_delivered_carrier_date, name: order_delivered_carrier_date, type: timestamp, nullable: true, invalid_behavior: reject-row}
+      - {source_name: order_delivered_customer_date, name: order_delivered_customer_date, type: timestamp, nullable: true, invalid_behavior: reject-row}
+      - {source_name: order_estimated_delivery_date, name: order_estimated_delivery_date, type: timestamp, nullable: true, invalid_behavior: reject-row}
+      - {source_name: derived, name: order_year, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: order_month, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: order_day, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: shipping_time_days, type: integer, nullable: true, invalid_behavior: reject-row}
+      - {source_name: derived, name: delivery_time_days, type: integer, nullable: true, invalid_behavior: reject-row}
+      - {source_name: derived, name: total_delivery_time_days, type: integer, nullable: true, invalid_behavior: reject-row}
+      - {source_name: derived, name: is_delayed, type: boolean, nullable: true, invalid_behavior: reject-row}
+      - {source_name: derived, name: delay_days, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: is_approved, type: boolean, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: is_shipped, type: boolean, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: is_delivered, type: boolean, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: shipping_days, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: delivery_days, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: total_days, type: integer, nullable: false, invalid_behavior: reject-row}
+  order_items:
+    business_key: [order_id, order_item_id]
+    deduplication_key: [order_id, order_item_id]
+    partition_columns: []
+    fields:
+      - {source_name: order_id, name: order_id, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: order_item_id, name: order_item_id, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: product_id, name: product_id, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: seller_id, name: seller_id, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: shipping_limit_date, name: shipping_limit_date, type: timestamp, nullable: false, invalid_behavior: reject-row}
+      - {source_name: price, name: price, type: "decimal(10,2)", nullable: false, invalid_behavior: reject-row}
+      - {source_name: freight_value, name: freight_value, type: "decimal(10,2)", nullable: false, invalid_behavior: reject-row}
+  order_payments:
+    business_key: [order_id, payment_sequential]
+    deduplication_key: [order_id, payment_sequential]
+    partition_columns: []
+    fields:
+      - {source_name: order_id, name: order_id, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: payment_sequential, name: payment_sequential, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: payment_type, name: payment_type, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: payment_installments, name: payment_installments, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: payment_value, name: payment_value, type: "decimal(10,2)", nullable: false, invalid_behavior: reject-row}
+  order_reviews:
+    business_key: [review_id, order_id]
+    deduplication_key: [review_id, order_id]
+    partition_columns: []
+    fields:
+      - {source_name: review_id, name: review_id, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: order_id, name: order_id, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: review_score, name: review_score, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: review_comment_title, name: review_comment_title, type: string, nullable: true, invalid_behavior: reject-row}
+      - {source_name: review_comment_message, name: review_comment_message, type: string, nullable: true, invalid_behavior: reject-row}
+      - {source_name: review_creation_date, name: review_creation_date, type: timestamp, nullable: false, invalid_behavior: reject-row}
+      - {source_name: review_answer_timestamp, name: review_answer_timestamp, type: timestamp, nullable: false, invalid_behavior: reject-row}
+  products:
+    business_key: [product_id]
+    deduplication_key: [product_id]
+    category_fallback: uncategorized
+    partition_columns: []
+    fields:
+      - {source_name: product_id, name: product_id, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: product_category_name, name: product_category_name, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: product_name_lenght, name: product_name_length, type: integer, nullable: true, invalid_behavior: reject-row}
+      - {source_name: product_description_lenght, name: product_description_length, type: integer, nullable: true, invalid_behavior: reject-row}
+      - {source_name: product_photos_qty, name: product_photos_qty, type: integer, nullable: true, invalid_behavior: reject-row}
+      - {source_name: product_weight_g, name: product_weight_g, type: decimal, nullable: true, invalid_behavior: reject-row}
+      - {source_name: product_length_cm, name: product_length_cm, type: decimal, nullable: true, invalid_behavior: reject-row}
+      - {source_name: product_height_cm, name: product_height_cm, type: decimal, nullable: true, invalid_behavior: reject-row}
+      - {source_name: product_width_cm, name: product_width_cm, type: decimal, nullable: true, invalid_behavior: reject-row}
+      - {source_name: product_category_name_english, name: product_category_name_english, type: string, nullable: false, invalid_behavior: reject-row}
+  sellers:
+    business_key: [seller_id]
+    deduplication_key: [seller_id]
+    partition_columns: []
+    fields:
+      - {source_name: seller_id, name: seller_id, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: seller_zip_code_prefix, name: seller_zip_code_prefix, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: seller_city, name: seller_city, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: seller_state, name: seller_state, type: string, nullable: false, invalid_behavior: reject-row}
+  geolocation:
+    business_key: [geolocation_zip_code_prefix, geolocation_lat, geolocation_lng]
+    deduplication_key: [geolocation_zip_code_prefix, geolocation_lat, geolocation_lng]
+    partition_columns: []
+    fields:
+      - {source_name: geolocation_zip_code_prefix, name: geolocation_zip_code_prefix, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: geolocation_lat, name: geolocation_lat, type: decimal, nullable: false, invalid_behavior: reject-row}
+      - {source_name: geolocation_lng, name: geolocation_lng, type: decimal, nullable: false, invalid_behavior: reject-row}
+      - {source_name: geolocation_city, name: geolocation_city, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: geolocation_state, name: geolocation_state, type: string, nullable: false, invalid_behavior: reject-row}
+  category_translation:
+    business_key: [product_category_name]
+    deduplication_key: [product_category_name]
+    partition_columns: []
+    fields:
+      - {source_name: product_category_name, name: product_category_name, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: product_category_name_english, name: product_category_name_english, type: string, nullable: false, invalid_behavior: reject-row}

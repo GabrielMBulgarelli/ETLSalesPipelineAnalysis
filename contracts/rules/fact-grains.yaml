@@ -1,0 +1,4 @@
+contract_version: 1
+rules:
+  - {id: fact_sales_grain, severity: reject-dataset, dataset: fact_sales, fields: [OrderID, OrderItemID]}
+  - {id: fact_reviews_grain, severity: reject-dataset, dataset: fact_reviews, fields: [OrderID, ReviewID], product_attribution: false}

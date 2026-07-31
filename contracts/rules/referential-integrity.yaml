@@ -1,0 +1,8 @@
+contract_version: 1
+rules:
+  - {id: orders_customer, severity: reject-row, child: orders.customer_id, parent: customers.customer_id}
+  - {id: items_order, severity: reject-row, child: order_items.order_id, parent: orders.order_id}
+  - {id: items_product, severity: reject-row, child: order_items.product_id, parent: products.product_id}
+  - {id: items_seller, severity: reject-row, child: order_items.seller_id, parent: sellers.seller_id}
+  - {id: payments_order, severity: reject-row, child: order_payments.order_id, parent: orders.order_id}
+  - {id: reviews_order, severity: reject-row, child: order_reviews.order_id, parent: orders.order_id}

@@ -1,0 +1,18 @@
+contract_version: 1
+manifest_fields: [batch_id, batch_timestamp, dataset, source_file_id, content_sha256]
+manifest_constraints: {batch_id: immutable, batch_timestamp_timezone: UTC, content_hash: SHA-256}
+latest_attempt: {group_by: [dataset, batch_id], select_by: maximum-attempt-number, collection_order_authoritative: false}
+replay_classification:
+  latest_succeeded: no-op
+  latest_skipped_after_successful_reuse: no-op
+  latest_failed_retryable: retry
+  latest_failed_not_retryable: reused-failure
+  latest_failed_retryability_absent: reused-failure
+rules:
+  - {id: identical_manifest_replay, severity: warning, outcome: no-op}
+  - {id: changed_content_same_batch, severity: fail-batch, outcome: fail-batch}
+  - {id: identical_content_new_batch, severity: warning, outcome: no-op}
+  - {id: conflicting_update_without_source_timestamp, severity: reject-dataset, outcome: block-dataset}
+retry: {requires_explicit_retryable: true, reuse_original_manifest: true, publish: atomic-replace-incomplete-stage}
+audit_evidence: {every_submission: true, durable_persistence: deferred-to-provider-runtime}
+late_records: {classification: late-content, historical_dimension_versioning: historical-warehouse-runtime, fact_time_resolution: historical-warehouse-runtime}

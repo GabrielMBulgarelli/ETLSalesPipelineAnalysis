@@ -1,0 +1,14 @@
+contract_version: 1
+rules:
+  - id: conflicting_business_key
+    severity: reject-dataset
+    datasets: [customers, orders, order_items, order_payments, order_reviews, products, sellers, geolocation, category_translation]
+deduplication:
+  exact_duplicate: {severity: warning, action: retain-first-deterministically}
+  conflicting_key: {severity: reject-dataset, action: block-dataset}
+representative_payment:
+  order_by: [payment_sequential, payment_type]
+  select: first
+  usage: descriptive-item-price-attribution
+  tendered_value_allocation: excluded
+  future_payment_fact_grain: [order_id, payment_sequential]

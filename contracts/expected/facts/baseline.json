@@ -1,0 +1,1 @@
+{"contract_version":1,"fixture":"baseline","source_snapshot":"../baseline_snapshot.json","datasets":{"fact_sales":{"json_pointer":"/curated/fact_sales","row_count":3,"grain":["OrderID","OrderItemID"]},"fact_reviews":{"json_pointer":"/curated/fact_reviews","row_count":2,"grain":["OrderID","ReviewID"]}}}

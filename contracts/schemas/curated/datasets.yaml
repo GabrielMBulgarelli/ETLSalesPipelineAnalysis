@@ -1,0 +1,211 @@
+contract_version: 1
+stage: curated
+timestamp_policy: {canonical_timezone: UTC, canonical_format: "%Y-%m-%dT%H:%M:%SZ"}
+datasets:
+  dim_customer:
+    business_key: [CustomerID]
+    partition_columns: []
+    fields:
+      - {source_name: customer_id, name: CustomerID, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: customer_unique_id, name: CustomerUniqueID, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: customer_zip_code_prefix, name: CustomerZipCodePrefix, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: customer_city, name: CustomerCity, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: customer_state, name: CustomerState, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: snapshot, name: RowEffectiveDate, type: timestamp, nullable: false, invalid_behavior: reject-row}
+      - {source_name: snapshot, name: RowExpirationDate, type: timestamp, nullable: true, invalid_behavior: reject-row}
+      - {source_name: snapshot, name: CurrentFlag, type: boolean, nullable: false, invalid_behavior: reject-row}
+  dim_product:
+    business_key: [ProductID]
+    partition_columns: []
+    fields:
+      - {source_name: product_id, name: ProductID, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: product_category_name, name: ProductCategoryName, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: product_category_name_english, name: ProductCategoryNameEnglish, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: product_weight_g, name: ProductWeightG, type: decimal, nullable: true, invalid_behavior: reject-row}
+      - {source_name: product_length_cm, name: ProductLengthCm, type: decimal, nullable: true, invalid_behavior: reject-row}
+      - {source_name: product_height_cm, name: ProductHeightCm, type: decimal, nullable: true, invalid_behavior: reject-row}
+      - {source_name: product_width_cm, name: ProductWidthCm, type: decimal, nullable: true, invalid_behavior: reject-row}
+      - {source_name: derived, name: ProductVolumeCm3, type: decimal, nullable: true, invalid_behavior: reject-row}
+      - {source_name: derived, name: SizeCategory, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: snapshot, name: RowEffectiveDate, type: timestamp, nullable: false, invalid_behavior: reject-row}
+      - {source_name: snapshot, name: RowExpirationDate, type: timestamp, nullable: true, invalid_behavior: reject-row}
+      - {source_name: snapshot, name: CurrentFlag, type: boolean, nullable: false, invalid_behavior: reject-row}
+  dim_seller:
+    business_key: [SellerID]
+    partition_columns: []
+    fields:
+      - {source_name: seller_id, name: SellerID, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: seller_zip_code_prefix, name: SellerZipCodePrefix, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: seller_city, name: SellerCity, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: seller_state, name: SellerState, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: snapshot, name: RowEffectiveDate, type: timestamp, nullable: false, invalid_behavior: reject-row}
+      - {source_name: snapshot, name: RowExpirationDate, type: timestamp, nullable: true, invalid_behavior: reject-row}
+      - {source_name: snapshot, name: CurrentFlag, type: boolean, nullable: false, invalid_behavior: reject-row}
+  dim_geography:
+    business_key: [ZipCodePrefix]
+    partition_columns: []
+    fields:
+      - {source_name: geolocation_zip_code_prefix, name: ZipCodePrefix, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: geolocation_city, name: City, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: geolocation_state, name: State, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: geolocation_lat, name: Latitude, type: decimal, nullable: false, invalid_behavior: reject-row}
+      - {source_name: geolocation_lng, name: Longitude, type: decimal, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: Region, type: string, nullable: true, invalid_behavior: reject-row}
+      - {source_name: snapshot, name: RowEffectiveDate, type: timestamp, nullable: false, invalid_behavior: reject-row}
+      - {source_name: snapshot, name: RowExpirationDate, type: timestamp, nullable: true, invalid_behavior: reject-row}
+      - {source_name: snapshot, name: CurrentFlag, type: boolean, nullable: false, invalid_behavior: reject-row}
+  dim_date:
+    business_key: [DateKey]
+    partition_columns: []
+    fields:
+      - {source_name: derived, name: DateKey, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: DateID, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: Date, type: date, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: Year, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: Month, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: Day, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: Quarter, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: WeekOfYear, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: DayOfWeek, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: IsWeekend, type: boolean, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: MonthName, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: DayName, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: FiscalYear, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: FiscalQuarter, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: Holiday, type: string, nullable: true, invalid_behavior: reject-row}
+      - {source_name: derived, name: IsHoliday, type: boolean, nullable: false, invalid_behavior: reject-row}
+  dim_order_status:
+    business_key: [StatusID]
+    partition_columns: []
+    fields:
+      - {source_name: derived, name: StatusID, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: order_status, name: StatusDescription, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: order_status, name: IsApproved, type: boolean, nullable: false, invalid_behavior: reject-row}
+      - {source_name: order_status, name: IsDelivered, type: boolean, nullable: false, invalid_behavior: reject-row}
+      - {source_name: order_status, name: IsShipped, type: boolean, nullable: false, invalid_behavior: reject-row}
+      - {source_name: order_status, name: IsCancelled, type: boolean, nullable: false, invalid_behavior: reject-row}
+  fact_sales:
+    grain: [OrderID, OrderItemID]
+    partition_columns: []
+    fields:
+      - {source_name: order_id, name: OrderID, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: order_item_id, name: OrderItemID, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: customer_id, name: CustomerID, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: product_id, name: ProductID, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: seller_id, name: SellerID, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: DateKey, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: order_status, name: StatusID, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: customer_zip_code_prefix, name: ZipCodePrefix, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: order_purchase_timestamp, name: OrderPurchaseTimestamp, type: timestamp, nullable: false, invalid_behavior: reject-row}
+      - {source_name: order_delivered_customer_date, name: OrderDeliveredCustomerDate, type: timestamp, nullable: true, invalid_behavior: reject-row}
+      - {source_name: price, name: Price, type: decimal, nullable: false, invalid_behavior: reject-row}
+      - {source_name: freight_value, name: FreightValue, type: decimal, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: TotalItemValue, type: decimal, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: ShippingDays, type: integer, nullable: true, invalid_behavior: reject-row}
+      - {source_name: derived, name: DeliveryDays, type: integer, nullable: true, invalid_behavior: reject-row}
+      - {source_name: derived, name: TotalDays, type: integer, nullable: true, invalid_behavior: reject-row}
+      - {source_name: derived, name: IsDelayed, type: boolean, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: DelayDays, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: IsCrossState, type: boolean, nullable: false, invalid_behavior: reject-row}
+      - {source_name: representative_payment, name: PaymentType, type: string, nullable: true, invalid_behavior: reject-row}
+  fact_reviews:
+    grain: [OrderID, ReviewID]
+    partition_columns: []
+    fields:
+      - {source_name: order_id, name: OrderID, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: review_id, name: ReviewID, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: customer_id, name: CustomerID, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: DateKey, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: review_score, name: ReviewScore, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: review_comment_message, name: ReviewCommentMessage, type: string, nullable: true, invalid_behavior: reject-row}
+      - {source_name: review_creation_date, name: ReviewCreationDate, type: timestamp, nullable: false, invalid_behavior: reject-row}
+      - {source_name: review_answer_timestamp, name: ReviewAnswerTimestamp, type: timestamp, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: ReviewResponseDays, type: integer, nullable: false, invalid_behavior: reject-row}
+  sales_by_category: &aggregate_category
+    grain: [ProductCategoryNameEnglish]
+    partition_columns: []
+    fields:
+      - {source_name: derived, name: ProductCategoryNameEnglish, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: OrdersCount, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: UniqueCustomers, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: TotalSales, type: decimal, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: AvgItemPrice, type: decimal, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: AvgDeliveryTime, type: decimal, nullable: true, invalid_behavior: reject-row}
+      - {source_name: derived, name: DelayedOrders, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: batch_timestamp, name: LastUpdated, type: timestamp, nullable: false, invalid_behavior: reject-row}
+  sales_by_state:
+    grain: [CustomerState]
+    partition_columns: []
+    fields:
+      - {source_name: derived, name: CustomerState, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: OrdersCount, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: UniqueCustomers, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: TotalSales, type: decimal, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: AvgItemPrice, type: decimal, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: AvgDeliveryTime, type: decimal, nullable: true, invalid_behavior: reject-row}
+      - {source_name: batch_timestamp, name: LastUpdated, type: timestamp, nullable: false, invalid_behavior: reject-row}
+  seller_performance:
+    grain: [SellerID]
+    partition_columns: []
+    fields:
+      - {source_name: derived, name: SellerID, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: SellerState, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: OrdersCount, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: TotalSales, type: decimal, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: AvgShippingCost, type: decimal, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: AvgDeliveryTime, type: decimal, nullable: true, invalid_behavior: reject-row}
+      - {source_name: derived, name: DelayedOrders, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: DelayRate, type: decimal, nullable: false, invalid_behavior: reject-row}
+      - {source_name: batch_timestamp, name: LastUpdated, type: timestamp, nullable: false, invalid_behavior: reject-row}
+  monthly_sales:
+    grain: [Year, Month]
+    partition_columns: []
+    fields:
+      - {source_name: derived, name: Year, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: Month, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: OrdersCount, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: UniqueCustomers, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: TotalSales, type: decimal, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: AvgItemPrice, type: decimal, nullable: false, invalid_behavior: reject-row}
+      - {source_name: batch_timestamp, name: LastUpdated, type: timestamp, nullable: false, invalid_behavior: reject-row}
+  order_status:
+    grain: [ProductCategoryNameEnglish, OrderStatus]
+    partition_columns: []
+    fields:
+      - {source_name: derived, name: ProductCategoryNameEnglish, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: OrderStatus, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: OrdersCount, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: TotalSales, type: decimal, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: UniqueCustomers, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: batch_timestamp, name: LastUpdated, type: timestamp, nullable: false, invalid_behavior: reject-row}
+  cross_state_analysis:
+    grain: [ProductCategoryNameEnglish, IsCrossState]
+    partition_columns: []
+    fields:
+      - {source_name: derived, name: ProductCategoryNameEnglish, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: IsCrossState, type: boolean, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: OrdersCount, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: TotalSales, type: decimal, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: AvgDeliveryTime, type: decimal, nullable: true, invalid_behavior: reject-row}
+      - {source_name: derived, name: DelayRate, type: decimal, nullable: false, invalid_behavior: reject-row}
+      - {source_name: batch_timestamp, name: LastUpdated, type: timestamp, nullable: false, invalid_behavior: reject-row}
+  size_analysis:
+    grain: [ProductCategoryNameEnglish, SizeCategory]
+    partition_columns: []
+    fields:
+      - {source_name: derived, name: ProductCategoryNameEnglish, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: SizeCategory, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: OrdersCount, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: TotalSales, type: decimal, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: AvgShippingCost, type: decimal, nullable: false, invalid_behavior: reject-row}
+      - {source_name: batch_timestamp, name: LastUpdated, type: timestamp, nullable: false, invalid_behavior: reject-row}
+  payment_methods:
+    grain: [PaymentType]
+    partition_columns: []
+    fields:
+      - {source_name: derived, name: PaymentType, type: string, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: OrdersCount, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: TotalSales, type: decimal, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: AvgOrderValue, type: decimal, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: UniqueCustomers, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: batch_timestamp, name: LastUpdated, type: timestamp, nullable: false, invalid_behavior: reject-row}

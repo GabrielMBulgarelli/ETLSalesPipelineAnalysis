@@ -1,0 +1,1 @@
+{"contract_version":1,"fixture":"baseline","source_snapshot":"../baseline_snapshot.json","json_pointer":"/curated/dimensions","row_counts":{"dim_customer":3,"dim_product":3,"dim_seller":2,"dim_geography":3,"dim_date":60,"dim_order_status":6}}

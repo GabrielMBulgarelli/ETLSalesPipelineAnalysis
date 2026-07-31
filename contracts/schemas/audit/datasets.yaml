@@ -1,0 +1,38 @@
+contract_version: 1
+stage: audit
+persistence_scope: contract-and-expected-evidence-only
+enumerations:
+  replay_outcomes: [initial-load, new-content, late-content, no-op, retry, reused-failure]
+  validator_statuses: [accepted, accepted-with-warnings, accepted-with-rejections, reject-dataset, fail-batch]
+  pipeline_outcomes: [PASSED, PASSED_WITH_REJECTIONS, FAILED]
+  terminal_statuses: [SUCCEEDED, SKIPPED, FAILED]
+datasets:
+  batch_submission_audit:
+    grain: [Dataset, BatchID, AttemptNumber]
+    partition_columns: []
+    constraints:
+      submission_id: globally-unique
+      attempt_number:
+        starts_at: 1
+        unique_within: [Dataset, BatchID]
+        ordering: strictly-monotonically-increasing
+      latest_attempt: maximum-attempt-number
+      retryable: explicit-non-null
+      reused_success_submission_id: successful-output-reuse-only
+      reused_failure_submission_id: deterministic-failure-reuse-only
+    fields:
+      - {source_name: SubmissionID, name: SubmissionID, type: string, nullable: false, invalid_behavior: fail-batch}
+      - {source_name: AttemptNumber, name: AttemptNumber, type: integer, nullable: false, invalid_behavior: fail-batch}
+      - {source_name: SubmittedAt, name: SubmittedAt, type: timestamp, nullable: false, invalid_behavior: fail-batch}
+      - {source_name: BatchID, name: BatchID, type: string, nullable: false, invalid_behavior: fail-batch}
+      - {source_name: BatchTimestamp, name: BatchTimestamp, type: timestamp, nullable: false, invalid_behavior: fail-batch}
+      - {source_name: Dataset, name: Dataset, type: string, nullable: false, invalid_behavior: fail-batch}
+      - {source_name: SourceFileID, name: SourceFileID, type: string, nullable: false, invalid_behavior: fail-batch}
+      - {source_name: ContentSHA256, name: ContentSHA256, type: string, nullable: false, invalid_behavior: fail-batch}
+      - {source_name: ReplayOutcome, name: ReplayOutcome, type: string, nullable: false, invalid_behavior: fail-batch, enumeration: replay_outcomes}
+      - {source_name: ValidatorStatus, name: ValidatorStatus, type: string, nullable: false, invalid_behavior: fail-batch, enumeration: validator_statuses}
+      - {source_name: PipelineOutcome, name: PipelineOutcome, type: string, nullable: false, invalid_behavior: fail-batch, enumeration: pipeline_outcomes}
+      - {source_name: TerminalStatus, name: TerminalStatus, type: string, nullable: false, invalid_behavior: fail-batch, enumeration: terminal_statuses}
+      - {source_name: Retryable, name: Retryable, type: boolean, nullable: false, invalid_behavior: fail-batch}
+      - {source_name: ReusedSuccessSubmissionID, name: ReusedSuccessSubmissionID, type: string, nullable: true, invalid_behavior: fail-batch}
+      - {source_name: ReusedFailureSubmissionID, name: ReusedFailureSubmissionID, type: string, nullable: true, invalid_behavior: fail-batch}

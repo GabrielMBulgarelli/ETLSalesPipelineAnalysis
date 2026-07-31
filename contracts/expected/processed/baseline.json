@@ -1,0 +1,1 @@
+{"contract_version":1,"fixture":"baseline","source_snapshot":"../baseline_snapshot.json","json_pointer":"/processed","row_counts":{"customers":3,"orders":3,"order_items":4,"order_payments":4,"order_reviews":3,"products":3,"sellers":2,"geolocation":4,"category_translation":2}}

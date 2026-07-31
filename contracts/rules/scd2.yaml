@@ -1,0 +1,8 @@
+contract_version: 1
+mode: snapshot-only
+historical_runtime_destination: historical-warehouse-runtime
+first_planned_implementation: Redshift Serverless
+rules:
+  - {id: historical_dimension_versioning, severity: fail-batch, enabled: false, deferred_to: historical-warehouse-runtime}
+current_snapshot: {current_flag: true, effective_timestamp: batch_timestamp, expiration_timestamp: null}
+deferred: [change-detection, historical-effective-boundaries, late-arriving-dimension-resolution, fact-time-resolution]

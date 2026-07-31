@@ -1,3 +1,5 @@
-# Planned contract rules
+# Shared contract rules
 
-Reserved for Phase 2 data-quality rules, severity policy, and timestamp policy. This placeholder is documentation only and does not alter the Phase 1 baseline contract.
+These version 1 YAML files define provider-neutral business keys, fact grains, referential-integrity rules, quality severities, incremental replay behavior, and the current snapshot-only dimension policy.
+
+`scripts/validate_contracts.py` is the reference local validator for contract structure, cross-references, replay semantics, and fixture conformance. It does not represent a provider runtime or durable audit implementation.

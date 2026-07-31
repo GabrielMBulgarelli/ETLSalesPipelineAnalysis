@@ -1,5 +1,6 @@
 {
   "batch_timestamp": "2018-04-01T00:00:00Z",
+  "contract_version": 1,
   "curated": {
     "aggregations": {
       "cross_state_analysis": [

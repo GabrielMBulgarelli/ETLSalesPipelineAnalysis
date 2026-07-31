@@ -1,0 +1,28 @@
+contract_version: 1
+percentage_escalation: false
+optional_datasets: []
+pipeline_outcomes:
+  warning: PASSED
+  reject-row: PASSED_WITH_REJECTIONS
+  reject-dataset: FAILED
+  fail-batch: FAILED
+nonzero_validator_severities: [reject-dataset, fail-batch]
+rules:
+  - {id: exact_duplicate, severity: warning, action: retain-one}
+  - {id: required_key_null, severity: reject-row, action: quarantine}
+  - {id: invalid_parse, severity: reject-row, action: quarantine}
+  - {id: invalid_monetary_value, severity: reject-row, action: quarantine}
+  - {id: invalid_review_score, severity: reject-row, action: quarantine}
+  - {id: impossible_timestamp, severity: reject-row, action: quarantine}
+  - {id: orphan_reference, severity: reject-row, action: quarantine}
+  - {id: missing_dimension_lookup, severity: reject-row, action: quarantine}
+  - {id: conflicting_business_key, severity: reject-dataset, action: block-dataset}
+  - {id: duplicate_fact_grain, severity: reject-dataset, action: block-dataset}
+  - {id: missing_dataset, severity: fail-batch, action: stop-batch}
+  - {id: missing_column, severity: fail-batch, action: stop-batch}
+  - {id: unreadable_contract, severity: fail-batch, action: stop-batch}
+  - {id: invalid_contract_version, severity: fail-batch, action: stop-batch}
+  - {id: invalid_contract, severity: fail-batch, action: stop-batch}
+  - {id: invalid_severity, severity: fail-batch, action: stop-batch}
+  - {id: undeclared_field, severity: fail-batch, action: stop-batch}
+  - {id: provider_specific_uri, severity: fail-batch, action: stop-batch}

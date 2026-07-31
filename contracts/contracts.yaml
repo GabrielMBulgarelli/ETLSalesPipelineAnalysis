@@ -83,5 +83,19 @@ warehouse:
   fact_reviews: "Resolve CustomerID to the current CustomerKey after staging."
   load_mode: full_refresh
 
-payment_semantics: "Choose the row with the lowest payment_sequential per order (payment_type breaks ties); assign that representative type to every item and aggregate item revenue to that type."
-dimension_history: "CurrentFlag and effective dates describe the snapshot only; historical SCD Type 2 is absent."
+payment_semantics:
+  representative_row: {order_by: [payment_sequential, payment_type], select: first}
+  usage: descriptive-item-price-attribution
+  monetary_basis: item-price
+  payment_value: excluded-from-curated-monetary-measures
+  future_payment_fact_grain: [order_id, payment_sequential]
+dimension_history:
+  mode: snapshot-only
+  deferred_to: historical-warehouse-runtime
+  first_planned_implementation: Redshift Serverless
+  deferred_capabilities: [change-detection, historical-effective-boundaries, late-arriving-dimension-resolution, fact-time-resolution]
+quality_outcomes:
+  warning: PASSED
+  reject-row: PASSED_WITH_REJECTIONS
+  reject-dataset: FAILED
+  fail-batch: FAILED

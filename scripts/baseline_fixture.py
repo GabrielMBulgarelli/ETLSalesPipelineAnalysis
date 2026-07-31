@@ -369,6 +369,7 @@ def build_baseline_snapshot(raw_directory: Path, batch_timestamp: str = BATCH_TI
         for row in fact_sales
     ]
     return {
+        "contract_version": 1,
         "batch_timestamp": batch_timestamp,
         "processed": processed,
         "curated": {

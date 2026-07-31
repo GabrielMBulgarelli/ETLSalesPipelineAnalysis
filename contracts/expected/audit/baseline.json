@@ -1,0 +1,20 @@
+{
+  "contract_version": 1,
+  "fixture": "baseline",
+  "source_snapshot": "../baseline_snapshot.json",
+  "schema": "batch_submission_audit",
+  "evidence_scope": "contract-and-expected-evidence-only",
+  "durable_persistence": false,
+  "enumerations": {
+    "replay_outcomes": ["initial-load", "new-content", "late-content", "no-op", "retry", "reused-failure"],
+    "validator_statuses": ["accepted", "accepted-with-warnings", "accepted-with-rejections", "reject-dataset", "fail-batch"],
+    "pipeline_outcomes": ["PASSED", "PASSED_WITH_REJECTIONS", "FAILED"],
+    "terminal_statuses": ["SUCCEEDED", "SKIPPED", "FAILED"]
+  },
+  "records": [
+    {"SubmissionID":"submission-success-1","AttemptNumber":1,"SubmittedAt":"2018-04-01T00:00:00Z","BatchID":"baseline-success","BatchTimestamp":"2018-04-01T00:00:00Z","Dataset":"orders","SourceFileID":"olist_orders_dataset.csv","ContentSHA256":"1111111111111111111111111111111111111111111111111111111111111111","ReplayOutcome":"initial-load","ValidatorStatus":"accepted-with-rejections","PipelineOutcome":"PASSED_WITH_REJECTIONS","TerminalStatus":"SUCCEEDED","Retryable":false,"ReusedSuccessSubmissionID":null,"ReusedFailureSubmissionID":null},
+    {"SubmissionID":"submission-success-2","AttemptNumber":2,"SubmittedAt":"2018-04-01T00:01:00Z","BatchID":"baseline-success","BatchTimestamp":"2018-04-01T00:00:00Z","Dataset":"orders","SourceFileID":"olist_orders_dataset.csv","ContentSHA256":"1111111111111111111111111111111111111111111111111111111111111111","ReplayOutcome":"no-op","ValidatorStatus":"accepted-with-rejections","PipelineOutcome":"PASSED_WITH_REJECTIONS","TerminalStatus":"SKIPPED","Retryable":false,"ReusedSuccessSubmissionID":"submission-success-1","ReusedFailureSubmissionID":null},
+    {"SubmissionID":"submission-failure-1","AttemptNumber":1,"SubmittedAt":"2018-04-01T00:02:00Z","BatchID":"baseline-failure","BatchTimestamp":"2018-04-01T00:02:00Z","Dataset":"orders","SourceFileID":"olist_orders_invalid.csv","ContentSHA256":"2222222222222222222222222222222222222222222222222222222222222222","ReplayOutcome":"initial-load","ValidatorStatus":"reject-dataset","PipelineOutcome":"FAILED","TerminalStatus":"FAILED","Retryable":false,"ReusedSuccessSubmissionID":null,"ReusedFailureSubmissionID":null},
+    {"SubmissionID":"submission-failure-2","AttemptNumber":2,"SubmittedAt":"2018-04-01T00:03:00Z","BatchID":"baseline-failure","BatchTimestamp":"2018-04-01T00:02:00Z","Dataset":"orders","SourceFileID":"olist_orders_invalid.csv","ContentSHA256":"2222222222222222222222222222222222222222222222222222222222222222","ReplayOutcome":"reused-failure","ValidatorStatus":"reject-dataset","PipelineOutcome":"FAILED","TerminalStatus":"FAILED","Retryable":false,"ReusedSuccessSubmissionID":null,"ReusedFailureSubmissionID":"submission-failure-1"}
+  ]
+}
