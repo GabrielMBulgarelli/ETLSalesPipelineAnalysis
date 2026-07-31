@@ -1,0 +1,24 @@
+name: ecommerce-sales-aws-local
+
+services:
+  localstack:
+    image: docker.io/localstack/localstack:4.6.0
+    container_name: ecommerce-sales-localstack
+    environment:
+      SERVICES: s3
+      AWS_DEFAULT_REGION: us-east-1
+      DEBUG: "${LOCALSTACK_DEBUG:-0}"
+      PERSISTENCE: "1"
+    ports:
+      - "4566:4566"
+    volumes:
+      - localstack-data:/var/lib/localstack
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:4566/_localstack/health"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+      start_period: 5s
+
+volumes:
+  localstack-data:

@@ -1,5 +1,110 @@
-# AWS implementation
+# AWS-local S3 foundation
 
-AWS is planned but not implemented. This directory intentionally contains no notebooks, jobs, infrastructure, SQL loaders, or deployment code.
+Phase 3 provides a working local S3-compatible ingestion path for the nine Olist source files. It starts LocalStack, creates an idempotent data-lake layout, validates a complete source directory, publishes content-addressed raw objects, and records immutable manifests and submission audits. LocalStack is a local emulator; it is **not** managed Amazon S3 and does not validate AWS IAM, networking, scaling, durability, or service integration behavior.
 
-The governing `REFINED_DUAL_PLATFORM_ETL_IMPLEMENTATION_PLAN.md` is a user-owned planning input outside the tracked Phase 1 change. Phase 2 must define shared schemas, rules, timestamp policy, and expanded contract structure before AWS implementation begins. The current executable baseline is the provider-neutral contract described in the [repository overview](../../README.md).
+## Prerequisites
+
+- Linux x86_64 (the supported local host)
+- Docker Engine with Docker Compose v2 (Podman compatibility is best-effort)
+- Python 3.10 or newer
+- `curl`
+
+Install the package once in a virtual environment:
+
+```bash
+python3 -m venv .venv
+. .venv/bin/activate
+python3 -m pip install -e platforms/aws
+```
+
+The complete Olist dataset stays outside Git. Do not copy it into this repository.
+
+## Run locally
+
+```bash
+make aws-local-up
+make aws-local-seed DATASET_DIR=/absolute/path/to/olist
+make aws-local-status
+make aws-local-down
+```
+
+`aws-local-up` and `aws-local-status` are safe to rerun. `aws-local-down` stops the service without deleting the named LocalStack volume. Seeding creates a new batch ID unless `BATCH_ID` is supplied. For a controlled replay:
+
+```bash
+make aws-local-seed DATASET_DIR=/absolute/path/to/olist BATCH_ID=my-batch
+```
+
+When reusing a batch ID, the runtime reuses its original batch timestamp unless `BATCH_TIMESTAMP` is explicitly supplied. Supplying changed immutable content under that batch ID fails the batch.
+
+## Accepted source files
+
+`DATASET_DIR` is searched recursively and must contain exactly one file with each case-sensitive canonical name:
+
+- `olist_customers_dataset.csv`
+- `olist_orders_dataset.csv`
+- `olist_order_items_dataset.csv`
+- `olist_order_payments_dataset.csv`
+- `olist_order_reviews_dataset.csv`
+- `olist_products_dataset.csv`
+- `olist_sellers_dataset.csv`
+- `olist_geolocation_dataset.csv`
+- `product_category_name_translation.csv`
+
+Missing, duplicate, case-ambiguous, and unexpected CSV files are reported before any raw, manifest, or audit object is uploaded. The filenames map respectively to the provider-neutral datasets `customers`, `orders`, `order_items`, `order_payments`, `order_reviews`, `products`, `sellers`, `geolocation`, and `category_translation`.
+
+## Configuration and local credentials
+
+Configuration precedence is:
+
+1. environment variables;
+2. [`runtime/local/config.yaml`](runtime/local/config.yaml);
+3. package defaults.
+
+The useful environment variables are documented in the root [`.env.example`](../../.env.example). The committed local configuration uses `test`/`test` credentials and the LocalStack endpoint. These dummy credentials are allowed only when `environment=local`; configuration validation rejects them for any non-local profile. The local profile also requires the fixed `ecommerce-sales-local` bucket and a loopback or LocalStack endpoint.
+
+## S3 layout
+
+```text
+s3://ecommerce-sales-local/
+├── raw/<dataset>/
+├── processed/<dataset>/
+├── curated/dimensions/
+├── curated/facts/
+├── curated/aggregations/
+├── rejected/<dataset>/
+├── quality/
+├── manifests/
+├── audit/
+└── staging/
+```
+
+Raw objects are content-addressed as `raw/<dataset>/content_sha256=<sha256>/<canonical-filename>`. Each manifest records the batch ID and timestamp, provider-neutral dataset, canonical source-file identity, size, source modification timestamp, content SHA-256, raw object path, and pipeline version. Manifests are stored at `manifests/dataset=<dataset>/batch_id=<batch-id>/manifest.json`. Submission evidence is append-only under `audit/dataset=<dataset>/batch_id=<batch-id>/attempt=<number>/`.
+
+## Replay behavior
+
+- An identical successful manifest is a no-op.
+- Identical successful content under a new batch ID is a no-op with new manifest and audit evidence, without republishing raw data.
+- A latest failed attempt is retried only when `Retryable=true`.
+- A deterministic failure, or failure without explicit retryability, produces reused-failure audit evidence without reprocessing.
+- Changed immutable content under an existing batch ID fails the batch.
+- The latest attempt is the maximum `AttemptNumber` for each `(Dataset, BatchID)`.
+- Every submission creates immutable audit evidence; no-op and reused-failure submissions do not republish raw data.
+
+## Inspect LocalStack
+
+With the AWS CLI installed, use the local endpoint and dummy credentials:
+
+```bash
+AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test AWS_DEFAULT_REGION=us-east-1 \
+  aws --endpoint-url http://localhost:4566 s3 ls s3://ecommerce-sales-local/ --recursive
+
+AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test AWS_DEFAULT_REGION=us-east-1 \
+  aws --endpoint-url http://localhost:4566 s3 cp \
+  s3://ecommerce-sales-local/manifests/ - --recursive --exclude '*' --include '*.json'
+```
+
+The repository status command reports foundation completeness and object counts without requiring the AWS CLI:
+
+```bash
+make aws-local-status
+```

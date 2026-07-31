@@ -1,0 +1,9 @@
+environment: local
+endpoint_url: http://localhost:4566
+region: us-east-1
+bucket: ecommerce-sales-local
+manifest_prefix: manifests/
+audit_prefix: audit/
+pipeline_version: 1.0.0
+aws_access_key_id: test
+aws_secret_access_key: test
