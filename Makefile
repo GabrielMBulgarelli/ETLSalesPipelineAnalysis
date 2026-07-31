@@ -1,8 +1,10 @@
 .PHONY: baseline-test contract-test phase-2-test baseline-validate contract-validate phase-2-validate \
-	aws-local-up aws-local-seed aws-local-status aws-local-down
+	aws-local-up aws-local-seed aws-local-process aws-local-status aws-local-down
 
 AWS_LOCAL_DIR := platforms/aws/runtime/local
 AWS_PYTHONPATH := platforms/aws/src
+include $(AWS_LOCAL_DIR)/glue.env
+export GLUE_IMAGE
 
 baseline-test:
 	python3 -m unittest discover -s platforms/azure/tests -v
@@ -27,6 +29,10 @@ aws-local-seed:
 	@test -n "$(DATASET_DIR)" || { echo "DATASET_DIR is required (for example: make aws-local-seed DATASET_DIR=/path/to/olist)" >&2; exit 2; }
 	PYTHONPATH=$(AWS_PYTHONPATH) DATASET_DIR="$(DATASET_DIR)" BATCH_ID="$(BATCH_ID)" BATCH_TIMESTAMP="$(BATCH_TIMESTAMP)" \
 		python3 $(AWS_LOCAL_DIR)/seed_s3.py --config $(AWS_LOCAL_DIR)/config.yaml
+
+aws-local-process:
+	@test -n "$(BATCH_ID)" || { echo "BATCH_ID is required (for example: make aws-local-process BATCH_ID=my-batch)" >&2; exit 2; }
+	BATCH_ID="$(BATCH_ID)" bash $(AWS_LOCAL_DIR)/run_glue_job.sh
 
 aws-local-status:
 	docker compose -f $(AWS_LOCAL_DIR)/docker-compose.yml ps

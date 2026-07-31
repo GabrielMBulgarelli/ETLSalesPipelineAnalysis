@@ -18,6 +18,10 @@ DEFAULTS: dict[str, str] = {
     "bucket": "ecommerce-sales-local",
     "manifest_prefix": "manifests/",
     "audit_prefix": "audit/",
+    "processed_prefix": "processed/",
+    "rejected_prefix": "rejected/",
+    "quality_prefix": "quality/",
+    "staging_prefix": "staging/",
     "pipeline_version": "1.0.0",
     "aws_access_key_id": "test",
     "aws_secret_access_key": "test",
@@ -30,6 +34,10 @@ ENVIRONMENT_KEYS: dict[str, tuple[str, ...]] = {
     "bucket": ("AWS_ETL_BUCKET",),
     "manifest_prefix": ("AWS_ETL_MANIFEST_PREFIX",),
     "audit_prefix": ("AWS_ETL_AUDIT_PREFIX",),
+    "processed_prefix": ("AWS_ETL_PROCESSED_PREFIX",),
+    "rejected_prefix": ("AWS_ETL_REJECTED_PREFIX",),
+    "quality_prefix": ("AWS_ETL_QUALITY_PREFIX",),
+    "staging_prefix": ("AWS_ETL_STAGING_PREFIX",),
     "pipeline_version": ("AWS_ETL_PIPELINE_VERSION",),
     "aws_access_key_id": ("AWS_ACCESS_KEY_ID",),
     "aws_secret_access_key": ("AWS_SECRET_ACCESS_KEY",),
@@ -55,6 +63,10 @@ class AwsEtlConfig:
     bucket: str
     manifest_prefix: str
     audit_prefix: str
+    processed_prefix: str
+    rejected_prefix: str
+    quality_prefix: str
+    staging_prefix: str
     pipeline_version: str
     aws_access_key_id: str | None
     aws_secret_access_key: str | None
@@ -132,6 +144,10 @@ def load_config(
         bucket=str(values["bucket"]).strip(),
         manifest_prefix=_prefix(str(values["manifest_prefix"]), "manifest_prefix"),
         audit_prefix=_prefix(str(values["audit_prefix"]), "audit_prefix"),
+        processed_prefix=_prefix(str(values["processed_prefix"]), "processed_prefix"),
+        rejected_prefix=_prefix(str(values["rejected_prefix"]), "rejected_prefix"),
+        quality_prefix=_prefix(str(values["quality_prefix"]), "quality_prefix"),
+        staging_prefix=_prefix(str(values["staging_prefix"]), "staging_prefix"),
         pipeline_version=str(values["pipeline_version"]).strip(),
         aws_access_key_id=str(values["aws_access_key_id"]).strip() if values.get("aws_access_key_id") else None,
         aws_secret_access_key=str(values["aws_secret_access_key"]).strip() if values.get("aws_secret_access_key") else None,

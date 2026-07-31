@@ -81,19 +81,21 @@ def upload_file_if_absent(client: Any, bucket: str, key: str, source: Path) -> b
 
 def put_json_immutable(client: Any, bucket: str, key: str, document: dict[str, Any]) -> None:
     body = json.dumps(document, indent=2, sort_keys=True).encode("utf-8") + b"\n"
+
+    def add_conditional_header(params: dict[str, Any], **_: Any) -> None:
+        params["headers"]["If-None-Match"] = "*"
+
+    event_name = "before-call.s3.PutObject"
+    client.meta.events.register_first(event_name, add_conditional_header)
     try:
-        client.put_object(
-            Bucket=bucket,
-            Key=key,
-            Body=body,
-            ContentType="application/json",
-            IfNoneMatch="*",
-        )
+        client.put_object(Bucket=bucket, Key=key, Body=body, ContentType="application/json")
     except ClientError as exc:
         code = str(exc.response.get("Error", {}).get("Code", ""))
         if code in {"PreconditionFailed", "412"}:
             raise FileExistsError(f"immutable S3 object already exists: s3://{bucket}/{key}") from exc
         raise
+    finally:
+        client.meta.events.unregister(event_name, add_conditional_header)
 
 
 def get_json(client: Any, bucket: str, key: str) -> dict[str, Any] | None:

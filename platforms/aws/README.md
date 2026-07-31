@@ -1,12 +1,12 @@
-# AWS-local S3 foundation
+# AWS-local raw-to-processed pipeline
 
-Phase 3 provides a working local S3-compatible ingestion path for the nine Olist source files. It starts LocalStack, creates an idempotent data-lake layout, validates a complete source directory, publishes content-addressed raw objects, and records immutable manifests and submission audits. LocalStack is a local emulator; it is **not** managed Amazon S3 and does not validate AWS IAM, networking, scaling, durability, or service integration behavior.
+Phases 3 and 4 provide a local S3-compatible ingestion and AWS Glue 5 processing path for the nine Olist source files. The job loads the committed contracts, applies explicit Spark schemas and conversions, quarantines malformed rows, and publishes processed Parquet through an immutable completion marker. LocalStack and the Glue container do not validate managed AWS IAM, networking, scaling, durability, or orchestration behavior.
 
 ## Prerequisites
 
 - Linux x86_64 (the supported local host)
 - Docker Engine with Docker Compose v2 (Podman compatibility is best-effort)
-- Python 3.10 or newer
+- Python 3.11 or newer
 - `curl`
 
 Install the package once in a virtual environment:
@@ -23,10 +23,13 @@ The complete Olist dataset stays outside Git. Do not copy it into this repositor
 
 ```bash
 make aws-local-up
-make aws-local-seed DATASET_DIR=/absolute/path/to/olist
+make aws-local-seed DATASET_DIR=/absolute/path/to/olist BATCH_ID=my-batch
+make aws-local-process BATCH_ID=my-batch
 make aws-local-status
 make aws-local-down
 ```
+
+The Glue image is configured once in [`runtime/local/glue.env`](runtime/local/glue.env). It is the official x86-64 Glue 5.0.9 image pinned by digest. The job uses Python 3.11, Java 17, Spark 3.5.4, and UTC. Monetary fields remain `decimal(10,2)`; unqualified logical decimals use `decimal(38,18)`. CSV schema inference is never used.
 
 `aws-local-up` and `aws-local-status` are safe to rerun. `aws-local-down` stops the service without deleting the named LocalStack volume. Seeding creates a new batch ID unless `BATCH_ID` is supplied. For a controlled replay:
 
@@ -77,6 +80,10 @@ s3://ecommerce-sales-local/
 ├── audit/
 └── staging/
 ```
+
+Processed Parquet is published at `processed/<dataset>/batch_id=<batch-id>/`. Each processed row contains contracted business columns followed by `batch_id`, `source_file_id`, `ingestion_timestamp`, `processing_timestamp`, and `contract_version`. Malformed rows are written once at `rejected/<dataset>/batch_id=<batch-id>/` with sorted, aligned reason-code and description arrays.
+
+The job first writes and verifies every dataset under a batch-specific staging prefix, copies complete output into final prefixes, and publishes `quality/batch_id=<batch-id>/processed-summary.json` last. This immutable summary is the completion marker. A completed matching replay is a no-op; only an incomplete matching publication is replaced.
 
 Raw objects are content-addressed as `raw/<dataset>/content_sha256=<sha256>/<canonical-filename>`. Each manifest records the batch ID and timestamp, provider-neutral dataset, canonical source-file identity, size, source modification timestamp, content SHA-256, raw object path, and pipeline version. Manifests are stored at `manifests/dataset=<dataset>/batch_id=<batch-id>/manifest.json`. Submission evidence is append-only under `audit/dataset=<dataset>/batch_id=<batch-id>/attempt=<number>/`.
 

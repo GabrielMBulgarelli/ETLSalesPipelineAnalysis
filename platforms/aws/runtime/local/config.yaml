@@ -4,6 +4,10 @@ region: us-east-1
 bucket: ecommerce-sales-local
 manifest_prefix: manifests/
 audit_prefix: audit/
+processed_prefix: processed/
+rejected_prefix: rejected/
+quality_prefix: quality/
+staging_prefix: staging/
 pipeline_version: 1.0.0
 aws_access_key_id: test
 aws_secret_access_key: test
