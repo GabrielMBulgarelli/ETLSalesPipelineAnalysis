@@ -8,6 +8,12 @@ source "${SCRIPT_DIR}/glue.env"
 
 : "${BATCH_ID:?BATCH_ID is required}"
 : "${GLUE_IMAGE:?GLUE_IMAGE must be configured in glue.env}"
+: "${GLUE_JOB:=process_raw}"
+
+case "${GLUE_JOB}" in
+  process_raw|validate_processed|build_curated) ;;
+  *) echo "Unsupported GLUE_JOB: ${GLUE_JOB}" >&2; exit 2 ;;
+esac
 
 docker run --rm \
   --network ecommerce-sales-aws-local_default \
@@ -20,8 +26,11 @@ docker run --rm \
   "${GLUE_IMAGE}" \
   -lc 'cp -a /home/hadoop/workspace/platforms/aws /tmp/aws-etl-package && python3 -m pip install --user --quiet /tmp/aws-etl-package && exec spark-submit "$@"' \
   glue-spark-submit \
-    /home/hadoop/workspace/platforms/aws/entrypoints/glue-jobs/process_raw.py \
+    "/home/hadoop/workspace/platforms/aws/entrypoints/glue-jobs/${GLUE_JOB}.py" \
     --batch-id "${BATCH_ID}" \
     --config /home/hadoop/workspace/platforms/aws/runtime/local/config.yaml \
     --raw-contract /home/hadoop/workspace/contracts/schemas/raw/datasets.yaml \
-    --processed-contract /home/hadoop/workspace/contracts/schemas/processed/datasets.yaml
+    --processed-contract /home/hadoop/workspace/contracts/schemas/processed/datasets.yaml \
+    --curated-contract /home/hadoop/workspace/contracts/schemas/curated/datasets.yaml \
+    --quality-contract /home/hadoop/workspace/contracts/rules/quality-thresholds.yaml \
+    --reference-contract /home/hadoop/workspace/contracts/rules/referential-integrity.yaml

@@ -1,6 +1,18 @@
 contract_version: 1
 stage: curated
 timestamp_policy: {canonical_timezone: UTC, canonical_format: "%Y-%m-%dT%H:%M:%SZ"}
+record_hash:
+  algorithm: sha256
+  encoding: utf-8
+  hexadecimal_case: lowercase
+  serialization: canonical-json
+  field_order: curated-contract
+  preserve_explicit_nulls: true
+  timestamp_normalization: UTC-microseconds
+  decimal_rendering: contracted-fixed-scale
+  exclusions: [RecordHash, runtime_metadata, publication_metadata, RowEffectiveDate, RowExpirationDate, CurrentFlag, LastUpdated]
+  purpose: stable-full-record-content-fingerprint
+  scd2_tracked_attribute_hash: separate
 datasets:
   dim_customer:
     business_key: [CustomerID]
@@ -14,6 +26,7 @@ datasets:
       - {source_name: snapshot, name: RowEffectiveDate, type: timestamp, nullable: false, invalid_behavior: reject-row}
       - {source_name: snapshot, name: RowExpirationDate, type: timestamp, nullable: true, invalid_behavior: reject-row}
       - {source_name: snapshot, name: CurrentFlag, type: boolean, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: RecordHash, type: string, nullable: false, invalid_behavior: reject-row}
   dim_product:
     business_key: [ProductID]
     partition_columns: []
@@ -30,6 +43,7 @@ datasets:
       - {source_name: snapshot, name: RowEffectiveDate, type: timestamp, nullable: false, invalid_behavior: reject-row}
       - {source_name: snapshot, name: RowExpirationDate, type: timestamp, nullable: true, invalid_behavior: reject-row}
       - {source_name: snapshot, name: CurrentFlag, type: boolean, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: RecordHash, type: string, nullable: false, invalid_behavior: reject-row}
   dim_seller:
     business_key: [SellerID]
     partition_columns: []
@@ -41,6 +55,7 @@ datasets:
       - {source_name: snapshot, name: RowEffectiveDate, type: timestamp, nullable: false, invalid_behavior: reject-row}
       - {source_name: snapshot, name: RowExpirationDate, type: timestamp, nullable: true, invalid_behavior: reject-row}
       - {source_name: snapshot, name: CurrentFlag, type: boolean, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: RecordHash, type: string, nullable: false, invalid_behavior: reject-row}
   dim_geography:
     business_key: [ZipCodePrefix]
     partition_columns: []
@@ -54,6 +69,7 @@ datasets:
       - {source_name: snapshot, name: RowEffectiveDate, type: timestamp, nullable: false, invalid_behavior: reject-row}
       - {source_name: snapshot, name: RowExpirationDate, type: timestamp, nullable: true, invalid_behavior: reject-row}
       - {source_name: snapshot, name: CurrentFlag, type: boolean, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: RecordHash, type: string, nullable: false, invalid_behavior: reject-row}
   dim_date:
     business_key: [DateKey]
     partition_columns: []
@@ -74,6 +90,7 @@ datasets:
       - {source_name: derived, name: FiscalQuarter, type: integer, nullable: false, invalid_behavior: reject-row}
       - {source_name: derived, name: Holiday, type: string, nullable: true, invalid_behavior: reject-row}
       - {source_name: derived, name: IsHoliday, type: boolean, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: RecordHash, type: string, nullable: false, invalid_behavior: reject-row}
   dim_order_status:
     business_key: [StatusID]
     partition_columns: []
@@ -84,6 +101,7 @@ datasets:
       - {source_name: order_status, name: IsDelivered, type: boolean, nullable: false, invalid_behavior: reject-row}
       - {source_name: order_status, name: IsShipped, type: boolean, nullable: false, invalid_behavior: reject-row}
       - {source_name: order_status, name: IsCancelled, type: boolean, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: RecordHash, type: string, nullable: false, invalid_behavior: reject-row}
   fact_sales:
     grain: [OrderID, OrderItemID]
     partition_columns: []
@@ -108,6 +126,7 @@ datasets:
       - {source_name: derived, name: DelayDays, type: integer, nullable: false, invalid_behavior: reject-row}
       - {source_name: derived, name: IsCrossState, type: boolean, nullable: false, invalid_behavior: reject-row}
       - {source_name: representative_payment, name: PaymentType, type: string, nullable: true, invalid_behavior: reject-row}
+      - {source_name: derived, name: RecordHash, type: string, nullable: false, invalid_behavior: reject-row}
   fact_reviews:
     grain: [OrderID, ReviewID]
     partition_columns: []
@@ -121,6 +140,7 @@ datasets:
       - {source_name: review_creation_date, name: ReviewCreationDate, type: timestamp, nullable: false, invalid_behavior: reject-row}
       - {source_name: review_answer_timestamp, name: ReviewAnswerTimestamp, type: timestamp, nullable: false, invalid_behavior: reject-row}
       - {source_name: derived, name: ReviewResponseDays, type: integer, nullable: false, invalid_behavior: reject-row}
+      - {source_name: derived, name: RecordHash, type: string, nullable: false, invalid_behavior: reject-row}
   sales_by_category: &aggregate_category
     grain: [ProductCategoryNameEnglish]
     partition_columns: []

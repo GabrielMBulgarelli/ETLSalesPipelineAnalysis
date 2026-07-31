@@ -54,6 +54,10 @@ CURATED_DATASETS = {
     "seller_performance",
     "size_analysis",
 }
+HASHED_CURATED_DATASETS = {
+    "dim_customer", "dim_date", "dim_geography", "dim_order_status", "dim_product",
+    "dim_seller", "fact_reviews", "fact_sales",
+}
 RULE_FILES = {
     "business-keys",
     "fact-grains",
@@ -248,6 +252,20 @@ def _validate_catalog(
                 "invalid_contract",
                 dataset,
             )
+            has_hash = "RecordHash" in declared
+            _require(has_hash == (dataset in HASHED_CURATED_DATASETS), "invalid_record_hash", dataset)
+            if has_hash:
+                _require(names[-1] == "RecordHash", "invalid_record_hash", dataset)
+
+    if stage == "curated":
+        _require(document.get("record_hash") == {
+            "algorithm": "sha256", "encoding": "utf-8", "hexadecimal_case": "lowercase",
+            "serialization": "canonical-json", "field_order": "curated-contract",
+            "preserve_explicit_nulls": True, "timestamp_normalization": "UTC-microseconds",
+            "decimal_rendering": "contracted-fixed-scale",
+            "exclusions": ["RecordHash", "runtime_metadata", "publication_metadata", "RowEffectiveDate", "RowExpirationDate", "CurrentFlag", "LastUpdated"],
+            "purpose": "stable-full-record-content-fingerprint", "scd2_tracked_attribute_hash": "separate",
+        }, "invalid_record_hash")
 
 
 def _split_reference(reference: Any) -> tuple[str, str]:

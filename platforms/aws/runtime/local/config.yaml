@@ -5,6 +5,7 @@ bucket: ecommerce-sales-local
 manifest_prefix: manifests/
 audit_prefix: audit/
 processed_prefix: processed/
+curated_prefix: curated/
 rejected_prefix: rejected/
 quality_prefix: quality/
 staging_prefix: staging/

@@ -33,6 +33,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--raw-contract", type=Path, required=True)
     parser.add_argument("--processed-contract", type=Path, required=True)
+    parser.add_argument("--curated-contract", type=Path)
+    parser.add_argument("--quality-contract", type=Path)
+    parser.add_argument("--reference-contract", type=Path)
     return parser.parse_args()
 
 

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 from collections import defaultdict
 from datetime import datetime
@@ -31,6 +32,22 @@ DATASETS = {
     ),
     "category_translation": ("product_category_name_translation.csv", ("product_category_name",)),
 }
+FACT_HASH_FIELDS = {
+    "fact_sales": (
+        "OrderID", "OrderItemID", "CustomerID", "ProductID", "SellerID", "DateKey", "StatusID",
+        "ZipCodePrefix", "OrderPurchaseTimestamp", "OrderDeliveredCustomerDate", "Price", "FreightValue",
+        "TotalItemValue", "ShippingDays", "DeliveryDays", "TotalDays", "IsDelayed", "DelayDays",
+        "IsCrossState", "PaymentType",
+    ),
+    "fact_reviews": (
+        "OrderID", "ReviewID", "CustomerID", "DateKey", "ReviewScore", "ReviewCommentMessage",
+        "ReviewCreationDate", "ReviewAnswerTimestamp", "ReviewResponseDays",
+    ),
+}
+FACT_DECIMALS = {"Price", "FreightValue", "TotalItemValue"}
+FACT_TIMESTAMPS = {
+    "OrderPurchaseTimestamp", "OrderDeliveredCustomerDate", "ReviewCreationDate", "ReviewAnswerTimestamp",
+}
 
 
 def _read_csv(path: Path) -> list[dict[str, str]]:
@@ -51,6 +68,19 @@ def _timestamp(value: str) -> datetime | None:
 
 def _money(value: Decimal) -> str:
     return str(value.quantize(Decimal("0.01")))
+
+
+def _record_hash(row: dict, dataset: str) -> str:
+    canonical = {}
+    for name in FACT_HASH_FIELDS[dataset]:
+        value = row.get(name)
+        if value is not None and name in FACT_DECIMALS:
+            value = f"{Decimal(value):.18f}"
+        elif value is not None and name in FACT_TIMESTAMPS:
+            value = datetime.fromisoformat(value).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+        canonical[name] = value
+    document = json.dumps(canonical, ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(document.encode("utf-8")).hexdigest()
 
 
 def _average(values: list[Decimal | int]) -> str | None:
@@ -310,6 +340,11 @@ def build_baseline_snapshot(raw_directory: Path, batch_timestamp: str = BATCH_TI
             }
         )
 
+    for row in fact_sales:
+        row["RecordHash"] = _record_hash(row, "fact_sales")
+    for row in fact_reviews:
+        row["RecordHash"] = _record_hash(row, "fact_reviews")
+
     customer_keys = {key: index for index, key in enumerate(sorted(customers), 1)}
     product_keys = {key: index for index, key in enumerate(sorted(products), 1)}
     seller_keys = {key: index for index, key in enumerate(sorted(sellers), 1)}
@@ -325,7 +360,7 @@ def build_baseline_snapshot(raw_directory: Path, batch_timestamp: str = BATCH_TI
         warehouse_row = {
             key: value
             for key, value in row.items()
-            if key not in {"CustomerID", "ProductID", "SellerID", "StatusID", "ZipCodePrefix", "CustomerState", "SellerState"}
+            if key not in {"CustomerID", "ProductID", "SellerID", "StatusID", "ZipCodePrefix", "CustomerState", "SellerState", "RecordHash"}
         }
         warehouse_row.update(
             CustomerKey=customer_keys[row["CustomerID"]],
@@ -337,7 +372,7 @@ def build_baseline_snapshot(raw_directory: Path, batch_timestamp: str = BATCH_TI
         warehouse_sales.append(warehouse_row)
     warehouse_reviews = []
     for row in fact_reviews:
-        warehouse_row = {key: value for key, value in row.items() if key != "CustomerID"}
+        warehouse_row = {key: value for key, value in row.items() if key not in {"CustomerID", "RecordHash"}}
         warehouse_row["CustomerKey"] = customer_keys[row["CustomerID"]]
         warehouse_reviews.append(warehouse_row)
 

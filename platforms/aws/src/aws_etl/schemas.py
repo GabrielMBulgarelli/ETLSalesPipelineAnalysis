@@ -24,15 +24,17 @@ def load_contract(path: str | Path, expected_stage: str) -> dict[str, Any]:
     if document.get("contract_version") != 1:
         raise ValueError(f"unsupported {expected_stage} contract version")
     datasets = document.get("datasets")
-    if not isinstance(datasets, dict) or tuple(datasets) != DATASETS:
+    if not isinstance(datasets, dict):
+        raise ValueError(f"{expected_stage} contract must declare a datasets mapping")
+    if expected_stage in {"raw", "processed"} and tuple(datasets) != DATASETS:
         raise ValueError(f"{expected_stage} contract must declare all nine datasets in canonical order")
     return document
 
 
 def spark_type(logical_type: str):
-    from pyspark.sql.types import BooleanType, DecimalType, IntegerType, StringType, TimestampType
+    from pyspark.sql.types import BooleanType, DateType, DecimalType, IntegerType, StringType, TimestampType
 
-    scalar_types = {"string": StringType, "integer": IntegerType, "boolean": BooleanType, "timestamp": TimestampType}
+    scalar_types = {"string": StringType, "integer": IntegerType, "boolean": BooleanType, "timestamp": TimestampType, "date": DateType}
     if logical_type in scalar_types:
         return scalar_types[logical_type]()
     if logical_type == "decimal":
@@ -69,3 +71,13 @@ def assert_processed_schema(dataset: str, frame: Any, processed_contract: dict[s
     expected_pairs = [(field.name, field.dataType.simpleString()) for field in expected.fields]
     if actual_pairs != expected_pairs:
         raise ValueError(f"processed schema mismatch for {dataset}: expected {expected_pairs}, got {actual_pairs}")
+
+
+def assert_curated_schema(dataset: str, frame: Any, curated_contract: dict[str, Any]) -> None:
+    expected = [
+        (field["name"], spark_type(field["type"]).simpleString())
+        for field in curated_contract["datasets"][dataset]["fields"]
+    ]
+    actual = [(field.name, field.dataType.simpleString()) for field in frame.schema.fields]
+    if actual != expected:
+        raise ValueError(f"curated schema mismatch for {dataset}: expected {expected}, got {actual}")

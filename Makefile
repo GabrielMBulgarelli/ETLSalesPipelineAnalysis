@@ -1,5 +1,5 @@
 .PHONY: baseline-test contract-test phase-2-test baseline-validate contract-validate phase-2-validate \
-	aws-local-up aws-local-seed aws-local-process aws-local-status aws-local-down
+	aws-local-up aws-local-seed aws-local-process aws-local-validate aws-local-curate aws-local-status aws-local-down
 
 AWS_LOCAL_DIR := platforms/aws/runtime/local
 AWS_PYTHONPATH := platforms/aws/src
@@ -33,6 +33,14 @@ aws-local-seed:
 aws-local-process:
 	@test -n "$(BATCH_ID)" || { echo "BATCH_ID is required (for example: make aws-local-process BATCH_ID=my-batch)" >&2; exit 2; }
 	BATCH_ID="$(BATCH_ID)" bash $(AWS_LOCAL_DIR)/run_glue_job.sh
+
+aws-local-validate:
+	@test -n "$(BATCH_ID)" || { echo "BATCH_ID is required" >&2; exit 2; }
+	BATCH_ID="$(BATCH_ID)" GLUE_JOB=validate_processed bash $(AWS_LOCAL_DIR)/run_glue_job.sh
+
+aws-local-curate:
+	@test -n "$(BATCH_ID)" || { echo "BATCH_ID is required" >&2; exit 2; }
+	BATCH_ID="$(BATCH_ID)" GLUE_JOB=build_curated bash $(AWS_LOCAL_DIR)/run_glue_job.sh
 
 aws-local-status:
 	docker compose -f $(AWS_LOCAL_DIR)/docker-compose.yml ps

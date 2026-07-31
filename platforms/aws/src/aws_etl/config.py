@@ -19,6 +19,7 @@ DEFAULTS: dict[str, str] = {
     "manifest_prefix": "manifests/",
     "audit_prefix": "audit/",
     "processed_prefix": "processed/",
+    "curated_prefix": "curated/",
     "rejected_prefix": "rejected/",
     "quality_prefix": "quality/",
     "staging_prefix": "staging/",
@@ -35,6 +36,7 @@ ENVIRONMENT_KEYS: dict[str, tuple[str, ...]] = {
     "manifest_prefix": ("AWS_ETL_MANIFEST_PREFIX",),
     "audit_prefix": ("AWS_ETL_AUDIT_PREFIX",),
     "processed_prefix": ("AWS_ETL_PROCESSED_PREFIX",),
+    "curated_prefix": ("AWS_ETL_CURATED_PREFIX",),
     "rejected_prefix": ("AWS_ETL_REJECTED_PREFIX",),
     "quality_prefix": ("AWS_ETL_QUALITY_PREFIX",),
     "staging_prefix": ("AWS_ETL_STAGING_PREFIX",),
@@ -64,6 +66,7 @@ class AwsEtlConfig:
     manifest_prefix: str
     audit_prefix: str
     processed_prefix: str
+    curated_prefix: str
     rejected_prefix: str
     quality_prefix: str
     staging_prefix: str
@@ -145,6 +148,7 @@ def load_config(
         manifest_prefix=_prefix(str(values["manifest_prefix"]), "manifest_prefix"),
         audit_prefix=_prefix(str(values["audit_prefix"]), "audit_prefix"),
         processed_prefix=_prefix(str(values["processed_prefix"]), "processed_prefix"),
+        curated_prefix=_prefix(str(values["curated_prefix"]), "curated_prefix"),
         rejected_prefix=_prefix(str(values["rejected_prefix"]), "rejected_prefix"),
         quality_prefix=_prefix(str(values["quality_prefix"]), "quality_prefix"),
         staging_prefix=_prefix(str(values["staging_prefix"]), "staging_prefix"),
