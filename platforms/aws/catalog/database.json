@@ -1,0 +1,6 @@
+{
+  "DatabaseInput": {
+    "Name": "ecommerce_sales_curated",
+    "Description": "Authoritative curated Parquet metadata for the ecommerce sales pipeline."
+  }
+}

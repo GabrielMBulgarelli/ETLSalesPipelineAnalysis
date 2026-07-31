@@ -1,0 +1,144 @@
+{
+  "DatabaseName": "ecommerce_sales_curated",
+  "TableInput": {
+    "Name": "dim_date",
+    "TableType": "EXTERNAL_TABLE",
+    "Parameters": {
+      "EXTERNAL": "TRUE",
+      "classification": "parquet"
+    },
+    "StorageDescriptor": {
+      "Columns": [
+        {
+          "Name": "DateKey",
+          "Type": "int",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "DateID",
+          "Type": "int",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "Date",
+          "Type": "date",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "Year",
+          "Type": "int",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "Month",
+          "Type": "int",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "Day",
+          "Type": "int",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "Quarter",
+          "Type": "int",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "WeekOfYear",
+          "Type": "int",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "DayOfWeek",
+          "Type": "int",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "IsWeekend",
+          "Type": "boolean",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "MonthName",
+          "Type": "string",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "DayName",
+          "Type": "string",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "FiscalYear",
+          "Type": "int",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "FiscalQuarter",
+          "Type": "int",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "Holiday",
+          "Type": "string",
+          "Parameters": {
+            "nullable": "true"
+          }
+        },
+        {
+          "Name": "IsHoliday",
+          "Type": "boolean",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "RecordHash",
+          "Type": "string",
+          "Parameters": {
+            "nullable": "false"
+          }
+        }
+      ],
+      "Location": "s3://ecommerce-sales-local/curated/dimensions/dim_date/",
+      "InputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat",
+      "OutputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat",
+      "SerdeInfo": {
+        "SerializationLibrary": "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe",
+        "Parameters": {
+          "serialization.format": "1"
+        }
+      }
+    },
+    "PartitionKeys": []
+  }
+}

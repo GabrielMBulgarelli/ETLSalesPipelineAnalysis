@@ -1,0 +1,74 @@
+{
+  "DatabaseName": "ecommerce_sales_curated",
+  "TableInput": {
+    "Name": "dim_order_status",
+    "TableType": "EXTERNAL_TABLE",
+    "Parameters": {
+      "EXTERNAL": "TRUE",
+      "classification": "parquet"
+    },
+    "StorageDescriptor": {
+      "Columns": [
+        {
+          "Name": "StatusID",
+          "Type": "string",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "StatusDescription",
+          "Type": "string",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "IsApproved",
+          "Type": "boolean",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "IsDelivered",
+          "Type": "boolean",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "IsShipped",
+          "Type": "boolean",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "IsCancelled",
+          "Type": "boolean",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "RecordHash",
+          "Type": "string",
+          "Parameters": {
+            "nullable": "false"
+          }
+        }
+      ],
+      "Location": "s3://${AWS_ETL_BUCKET}/curated/dimensions/dim_order_status/",
+      "InputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat",
+      "OutputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat",
+      "SerdeInfo": {
+        "SerializationLibrary": "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe",
+        "Parameters": {
+          "serialization.format": "1"
+        }
+      }
+    },
+    "PartitionKeys": []
+  }
+}

@@ -1,0 +1,116 @@
+{
+  "DatabaseName": "ecommerce_sales_curated",
+  "TableInput": {
+    "Name": "dim_product",
+    "TableType": "EXTERNAL_TABLE",
+    "Parameters": {
+      "EXTERNAL": "TRUE",
+      "classification": "parquet"
+    },
+    "StorageDescriptor": {
+      "Columns": [
+        {
+          "Name": "ProductID",
+          "Type": "string",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "ProductCategoryName",
+          "Type": "string",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "ProductCategoryNameEnglish",
+          "Type": "string",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "ProductWeightG",
+          "Type": "decimal(38,18)",
+          "Parameters": {
+            "nullable": "true"
+          }
+        },
+        {
+          "Name": "ProductLengthCm",
+          "Type": "decimal(38,18)",
+          "Parameters": {
+            "nullable": "true"
+          }
+        },
+        {
+          "Name": "ProductHeightCm",
+          "Type": "decimal(38,18)",
+          "Parameters": {
+            "nullable": "true"
+          }
+        },
+        {
+          "Name": "ProductWidthCm",
+          "Type": "decimal(38,18)",
+          "Parameters": {
+            "nullable": "true"
+          }
+        },
+        {
+          "Name": "ProductVolumeCm3",
+          "Type": "decimal(38,18)",
+          "Parameters": {
+            "nullable": "true"
+          }
+        },
+        {
+          "Name": "SizeCategory",
+          "Type": "string",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "RowEffectiveDate",
+          "Type": "timestamp",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "RowExpirationDate",
+          "Type": "timestamp",
+          "Parameters": {
+            "nullable": "true"
+          }
+        },
+        {
+          "Name": "CurrentFlag",
+          "Type": "boolean",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "RecordHash",
+          "Type": "string",
+          "Parameters": {
+            "nullable": "false"
+          }
+        }
+      ],
+      "Location": "s3://${AWS_ETL_BUCKET}/curated/dimensions/dim_product/",
+      "InputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat",
+      "OutputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat",
+      "SerdeInfo": {
+        "SerializationLibrary": "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe",
+        "Parameters": {
+          "serialization.format": "1"
+        }
+      }
+    },
+    "PartitionKeys": []
+  }
+}

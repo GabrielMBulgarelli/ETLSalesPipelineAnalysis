@@ -1,0 +1,172 @@
+{
+  "DatabaseName": "ecommerce_sales_curated",
+  "TableInput": {
+    "Name": "fact_sales",
+    "TableType": "EXTERNAL_TABLE",
+    "Parameters": {
+      "EXTERNAL": "TRUE",
+      "classification": "parquet"
+    },
+    "StorageDescriptor": {
+      "Columns": [
+        {
+          "Name": "OrderID",
+          "Type": "string",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "OrderItemID",
+          "Type": "int",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "CustomerID",
+          "Type": "string",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "ProductID",
+          "Type": "string",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "SellerID",
+          "Type": "string",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "DateKey",
+          "Type": "int",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "StatusID",
+          "Type": "string",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "ZipCodePrefix",
+          "Type": "int",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "OrderPurchaseTimestamp",
+          "Type": "timestamp",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "OrderDeliveredCustomerDate",
+          "Type": "timestamp",
+          "Parameters": {
+            "nullable": "true"
+          }
+        },
+        {
+          "Name": "Price",
+          "Type": "decimal(38,18)",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "FreightValue",
+          "Type": "decimal(38,18)",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "TotalItemValue",
+          "Type": "decimal(38,18)",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "ShippingDays",
+          "Type": "int",
+          "Parameters": {
+            "nullable": "true"
+          }
+        },
+        {
+          "Name": "DeliveryDays",
+          "Type": "int",
+          "Parameters": {
+            "nullable": "true"
+          }
+        },
+        {
+          "Name": "TotalDays",
+          "Type": "int",
+          "Parameters": {
+            "nullable": "true"
+          }
+        },
+        {
+          "Name": "IsDelayed",
+          "Type": "boolean",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "DelayDays",
+          "Type": "int",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "IsCrossState",
+          "Type": "boolean",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "PaymentType",
+          "Type": "string",
+          "Parameters": {
+            "nullable": "true"
+          }
+        },
+        {
+          "Name": "RecordHash",
+          "Type": "string",
+          "Parameters": {
+            "nullable": "false"
+          }
+        }
+      ],
+      "Location": "s3://ecommerce-sales-local/curated/facts/fact_sales/",
+      "InputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat",
+      "OutputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat",
+      "SerdeInfo": {
+        "SerializationLibrary": "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe",
+        "Parameters": {
+          "serialization.format": "1"
+        }
+      }
+    },
+    "PartitionKeys": []
+  }
+}

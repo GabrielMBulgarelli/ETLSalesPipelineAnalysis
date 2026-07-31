@@ -1,0 +1,67 @@
+{
+  "DatabaseName": "ecommerce_sales_curated",
+  "TableInput": {
+    "Name": "order_status",
+    "TableType": "EXTERNAL_TABLE",
+    "Parameters": {
+      "EXTERNAL": "TRUE",
+      "classification": "parquet"
+    },
+    "StorageDescriptor": {
+      "Columns": [
+        {
+          "Name": "ProductCategoryNameEnglish",
+          "Type": "string",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "OrderStatus",
+          "Type": "string",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "OrdersCount",
+          "Type": "int",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "TotalSales",
+          "Type": "decimal(38,18)",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "UniqueCustomers",
+          "Type": "int",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "LastUpdated",
+          "Type": "timestamp",
+          "Parameters": {
+            "nullable": "false"
+          }
+        }
+      ],
+      "Location": "s3://ecommerce-sales-local/curated/aggregations/order_status/",
+      "InputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat",
+      "OutputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat",
+      "SerdeInfo": {
+        "SerializationLibrary": "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe",
+        "Parameters": {
+          "serialization.format": "1"
+        }
+      }
+    },
+    "PartitionKeys": []
+  }
+}

@@ -1,6 +1,6 @@
 # AWS-local raw-to-curated pipeline
 
-Phases 3 through 5 provide a local S3-compatible ingestion and AWS Glue 5 path from the nine Olist source files through validated processed data, curated dimensions and facts, and eight aggregates. LocalStack and the Glue container do not validate managed AWS IAM, networking, scaling, durability, or orchestration behavior.
+Phases 3 through 6 provide a local S3-compatible ingestion and AWS Glue 5 path from the nine Olist source files through validated processed data, curated dimensions and facts, eight aggregates, and explicit curated catalog metadata. LocalStack and the Glue container do not validate managed AWS IAM, networking, scaling, durability, or orchestration behavior.
 
 ## Prerequisites
 
@@ -92,6 +92,19 @@ Phase 5 publishes `validation-summary.json` last after deterministic validation 
 Curated dimensions are snapshots and retain their business identifiers. Facts retain business identifiers at `(OrderID, OrderItemID)` and `(OrderID, ReviewID)` grains; no warehouse surrogate keys are assigned. Each dimension and fact has a lowercase SHA-256 `RecordHash` over canonical JSON in contract field order, preserving nulls and normalizing decimals and timestamps as specified by the curated contract. This is a full-record fingerprint, not an SCD Type 2 tracked-attribute hash.
 
 The `payment_methods` aggregate groups item `Price` by the representative payment type, selected as the first payment ordered by `(payment_sequential, payment_type)`. It is descriptive item-price attribution, not tendered-payment totals; `payment_value` is neither allocated nor aggregated into `fact_sales` or this aggregate.
+
+## Curated catalog metadata
+
+The authoritative Glue table templates are under [`catalog/tables`](catalog/tables), with database metadata in [`catalog/database.json`](catalog/database.json). Each template uses the Glue `CreateTable` request envelope but contains the required deployment-time token `${AWS_ETL_BUCKET}`. The committed cloud JSON is therefore a template, not a directly invokable request; Phase 8 CDK must resolve the token before deployment.
+
+Structurally matching local manifests are under [`runtime/local/catalog-manifests`](runtime/local/catalog-manifests). They point to `s3://ecommerce-sales-local/curated/<layer>/<dataset>/` and describe the same 16 unpartitioned Parquet datasets. These versioned JSON files validate metadata equivalence only: they are not a running Glue Data Catalog and do not establish that Glue Data Catalog was deployed or invoked. Crawlers are not authoritative for curated schemas.
+
+Regenerate and validate the deterministic metadata from the committed curated contract with:
+
+```bash
+make catalog-generate
+make catalog-validate
+```
 
 Raw objects are content-addressed as `raw/<dataset>/content_sha256=<sha256>/<canonical-filename>`. Each manifest records the batch ID and timestamp, provider-neutral dataset, canonical source-file identity, size, source modification timestamp, content SHA-256, raw object path, and pipeline version. Manifests are stored at `manifests/dataset=<dataset>/batch_id=<batch-id>/manifest.json`. Submission evidence is append-only under `audit/dataset=<dataset>/batch_id=<batch-id>/attempt=<number>/`.
 

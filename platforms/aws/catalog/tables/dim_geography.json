@@ -1,0 +1,95 @@
+{
+  "DatabaseName": "ecommerce_sales_curated",
+  "TableInput": {
+    "Name": "dim_geography",
+    "TableType": "EXTERNAL_TABLE",
+    "Parameters": {
+      "EXTERNAL": "TRUE",
+      "classification": "parquet"
+    },
+    "StorageDescriptor": {
+      "Columns": [
+        {
+          "Name": "ZipCodePrefix",
+          "Type": "int",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "City",
+          "Type": "string",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "State",
+          "Type": "string",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "Latitude",
+          "Type": "decimal(38,18)",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "Longitude",
+          "Type": "decimal(38,18)",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "Region",
+          "Type": "string",
+          "Parameters": {
+            "nullable": "true"
+          }
+        },
+        {
+          "Name": "RowEffectiveDate",
+          "Type": "timestamp",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "RowExpirationDate",
+          "Type": "timestamp",
+          "Parameters": {
+            "nullable": "true"
+          }
+        },
+        {
+          "Name": "CurrentFlag",
+          "Type": "boolean",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "RecordHash",
+          "Type": "string",
+          "Parameters": {
+            "nullable": "false"
+          }
+        }
+      ],
+      "Location": "s3://${AWS_ETL_BUCKET}/curated/dimensions/dim_geography/",
+      "InputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat",
+      "OutputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat",
+      "SerdeInfo": {
+        "SerializationLibrary": "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe",
+        "Parameters": {
+          "serialization.format": "1"
+        }
+      }
+    },
+    "PartitionKeys": []
+  }
+}

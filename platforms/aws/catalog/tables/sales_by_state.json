@@ -1,0 +1,74 @@
+{
+  "DatabaseName": "ecommerce_sales_curated",
+  "TableInput": {
+    "Name": "sales_by_state",
+    "TableType": "EXTERNAL_TABLE",
+    "Parameters": {
+      "EXTERNAL": "TRUE",
+      "classification": "parquet"
+    },
+    "StorageDescriptor": {
+      "Columns": [
+        {
+          "Name": "CustomerState",
+          "Type": "string",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "OrdersCount",
+          "Type": "int",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "UniqueCustomers",
+          "Type": "int",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "TotalSales",
+          "Type": "decimal(38,18)",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "AvgItemPrice",
+          "Type": "decimal(38,18)",
+          "Parameters": {
+            "nullable": "false"
+          }
+        },
+        {
+          "Name": "AvgDeliveryTime",
+          "Type": "decimal(38,18)",
+          "Parameters": {
+            "nullable": "true"
+          }
+        },
+        {
+          "Name": "LastUpdated",
+          "Type": "timestamp",
+          "Parameters": {
+            "nullable": "false"
+          }
+        }
+      ],
+      "Location": "s3://${AWS_ETL_BUCKET}/curated/aggregations/sales_by_state/",
+      "InputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat",
+      "OutputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat",
+      "SerdeInfo": {
+        "SerializationLibrary": "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe",
+        "Parameters": {
+          "serialization.format": "1"
+        }
+      }
+    },
+    "PartitionKeys": []
+  }
+}

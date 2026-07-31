@@ -1,4 +1,4 @@
-.PHONY: baseline-test contract-test phase-2-test baseline-validate contract-validate phase-2-validate \
+.PHONY: baseline-test contract-test phase-2-test baseline-validate contract-validate catalog-generate catalog-validate phase-2-validate \
 	aws-local-up aws-local-seed aws-local-process aws-local-validate aws-local-curate aws-local-status aws-local-down
 
 AWS_LOCAL_DIR := platforms/aws/runtime/local
@@ -17,6 +17,12 @@ contract-validate:
 	python3 scripts/validate_contracts.py --fixture baseline >/dev/null
 
 contract-test: contract-validate
+
+catalog-generate:
+	python3 scripts/catalog_metadata.py --generate
+
+catalog-validate:
+	python3 scripts/catalog_metadata.py
 
 phase-2-test: baseline-test contract-test
 
