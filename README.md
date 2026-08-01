@@ -1,80 +1,138 @@
-# Dual-Platform Sales ETL Pipeline
+# AWS-First E-commerce Data Engineering Platform
 
-## Product vision
+An end-to-end batch data platform for the Olist e-commerce dataset, built around an Amazon S3 data lake, AWS Glue 5 and PySpark, Glue Data Catalog, a 32-state Step Functions workflow, Redshift Serverless with SCD Type 2 history, AWS CDK, least-privilege IAM, private networking, CloudWatch, and a PostgreSQL local warehouse.
 
-This repository presents a provider-neutral sales ETL pipeline with Azure and AWS implementations. Shared schemas, transformation rules, fixtures, expected outputs, and validation govern the behavior each platform implementation must preserve.
+> **Evidence statement:** the pipeline and PostgreSQL warehouse were executed locally, contracts and AWS behavior were validated deterministically, and all six AWS CDK stacks were synthesized—but no AWS resources were deployed.
 
-## Platform roadmap
+## Architecture
 
-| Platform | Status | Scope |
+```mermaid
+flowchart LR
+    SRC["9 Olist CSV sources"] --> S3["Amazon S3 data lake<br/>raw · processed · curated · audit"]
+    S3 --> G1["Glue 5: ProcessRaw"]
+    G1 --> G2["Glue 5: ValidateProcessed"]
+    G2 --> G3["Glue 5: BuildCurated"]
+    G3 --> CAT["Glue Data Catalog<br/>16 explicit Parquet tables"]
+    G3 --> G4["Glue 5: LoadWarehouse"]
+    G4 --> RS["Redshift Serverless<br/>SCD2 dimensional warehouse"]
+    SF["Step Functions<br/>32 states"] --> G1
+    SF --> G2
+    SF --> G3
+    SF --> G4
+    CDK["AWS CDK<br/>6 stacks"] --> S3
+    CDK --> CAT
+    CDK --> SF
+    CDK --> RS
+    IAM["IAM · private VPC · CloudWatch"] --- CDK
+```
+
+The cloud design is split into six independently reviewable CDK stacks: Storage, Catalog, Warehouse, Processing, Orchestration, and Observability. Four Glue 5 jobs transform nine source datasets into six dimensions, two facts, and eight aggregates. The Standard Workflow coordinates replay classification, processing, quality decisions, curation, Redshift publication, immutable audit evidence, and terminal outcomes.
+
+## Local execution architecture
+
+```mermaid
+flowchart LR
+    CSV["Olist CSV directory"] --> LS["LocalStack S3"]
+    LS --> GLUE["AWS Glue 5 Docker<br/>shared aws_etl modules"]
+    GLUE --> CUR["16 curated Parquet datasets"]
+    RUNNER["Python pipeline runner<br/>matching stage decisions"] --> GLUE
+    CUR --> PG["PostgreSQL 16<br/>staging · warehouse · analytics · audit"]
+    CONTRACTS["Versioned contracts + fixture"] --> GLUE
+    CONTRACTS --> CHECKS["Deterministic validators<br/>ASL · catalog · SQL · SCD2/replay"]
+```
+
+LocalStack substitutes for S3, the official Glue 5 container runs PySpark, a Python runner mirrors orchestration decisions, and PostgreSQL exercises publication and replay behavior without cloud credentials.
+
+## Engineering evidence
+
+| Capability | Repository evidence | Evidence level |
 |---|---|---|
-| [Azure](platforms/azure/README.md) | Locally verified; live-cloud validation pending | Synapse notebooks, orchestration templates, and SQL warehouse loaders |
-| [AWS](platforms/aws/README.md) | Local S3 foundation implemented | LocalStack S3 bootstrap, raw ingestion, immutable manifests, and replay audit evidence |
+| S3 data lake | Versioned raw objects, manifests, processed/curated Parquet writers, lifecycle-controlled CDK bucket | Executed locally; synthesized |
+| Glue 5 / PySpark | Four cloud job entrypoints and shared `aws_etl` transformations | Executed locally; deterministically validated; synthesized |
+| Glue Data Catalog | 16 explicit Parquet table definitions generated from curated contracts | Deterministically validated; synthesized |
+| Step Functions | 32-state ASL workflow with explicit retry, replay, failure, and audit paths | Deterministically validated; synthesized |
+| Redshift Serverless | Separate Redshift SQL, Data API loader, SCD2 publication procedure, private workgroup | Deterministically simulated; synthesized |
+| PostgreSQL | Attempt-isolated staging and atomic dimensional publication | Executed locally |
+| IAM and networking | Prefix-scoped roles, private `/24` VPC, three isolated subnets, S3 gateway endpoint, enhanced routing | Synthesized |
+| CloudWatch and cost controls | Retained logs, actionless alarms, Glue concurrency/timeouts, 8–16 RPU and 40 RPU-hour monthly limit | Synthesized; not measured |
 
-The AWS implementation currently covers the Phase 3 local S3 foundation. Glue processing, orchestration, cloud infrastructure, and warehousing remain future phases.
+The full service-to-file matrix and evidence boundaries are in [AWS project evidence](platforms/aws/validation-evidence.md).
 
-## Shared data contract
-
-The provider-neutral version 1 contract is split across the raw, processed, and curated catalogs in [`contracts/schemas/`](contracts/schemas/), with quality, grain, referential-integrity, snapshot, and replay policy in [`contracts/rules/`](contracts/rules/). Deterministic raw fixtures in [`contracts/fixtures/`](contracts/fixtures/) are validated against the versioned expectations in [`contracts/expected/`](contracts/expected/) by [`scripts/validate_contracts.py`](scripts/validate_contracts.py).
-
-The sales fact has one row per order item. Reviews are linked to orders and customers, not products. These grains and transformation rules are shared requirements, not Azure-specific behavior.
-
-## Azure implementation
-
-The Azure implementation is the locally verified baseline; its platform guide documents the Synapse notebooks, orchestration templates, and warehouse loaders.
-
-### Architecture
-
-This diagram communicates the Azure ETL flow from source ingestion through processed and curated layers.
-
-![Azure ETL architecture](docs/architecture/azure/architecture-flow.svg)
-
-### Dimensional model
-
-This diagram communicates the dimensions and facts produced for sales analytics.
-
-![Azure dimensional model](docs/architecture/azure/dimensions_facts_tables.svg)
-
-### Aggregate datasets
-
-This diagram communicates the aggregate datasets built from the curated model.
-
-![Azure aggregate datasets](docs/architecture/azure/aggregation_tables.svg)
-
-### Notebook pipeline
-
-This diagram communicates the sequence of Azure notebooks in the pipeline.
-
-![Azure notebook pipeline](docs/architecture/azure/simplified_notebook_pipeline.png)
-
-## AWS implementation
-
-The [AWS local guide](platforms/aws/README.md) documents how to start LocalStack S3, seed the nine contracted Olist inputs, inspect immutable manifests and audit evidence, verify status, and shut down the environment. LocalStack is not managed Amazon S3; no managed AWS service is claimed as executed.
-
-## Local verification
-
-Python 3.10 or newer is sufficient; Azure credentials are not required. Install the development dependencies, then run the phase gate:
-
-```bash
-python3 -m pip install -r requirements-dev.txt
-make phase-2-test
-```
-
-This runs the existing baseline and documentation-link checks followed by provider-neutral contract validation. The validator can also be run directly:
-
-```bash
-python3 scripts/validate_contracts.py --fixture baseline
-```
-
-See the [baseline execution guide](platforms/azure/baseline.md) and [Azure baseline audit](platforms/azure/baseline.md) for current evidence and limitations.
-
-## Repository layout
+## Pipeline and warehouse flow
 
 ```text
-contracts/              Provider-neutral schemas, rules, fixtures, and expected outputs
-docs/                   Architecture, plans, and baseline evidence
-platforms/azure/        Locally verified Azure implementation
-platforms/aws/          AWS-local S3 package and runtime foundation
-scripts/                Deterministic fixture and contract validators
-tests/         Existing behavioral and repository-layout tests
+9 CSV inputs
+  -> immutable raw objects + manifests + submission audit
+  -> explicit-schema cleansing, normalization, deduplication, rejected rows
+  -> cross-dataset quality and referential-integrity gate
+  -> 16 curated Parquet datasets (6 dimensions + 2 facts + 8 aggregates)
+  -> attempt-isolated warehouse staging
+  -> SCD2 dimension publication + event-time surrogate-key resolution
+  -> facts + aggregates + completed registry + immutable audit evidence
 ```
+
+Four dimensions—customer, product, seller, and geography—use tracked-attribute hashes and half-open effective intervals in the Redshift design. Identical completed replays are no-ops, changed evidence for a completed batch is a deterministic conflict, and failed attempts cannot create a completed publication record.
+
+The sales fact grain is one row per order item. Reviews are linked to orders and customers, not products, so the review fact remains at its source review grain without inventing a product relationship.
+
+## Deterministic fixture results
+
+| Evidence | Result |
+|---|---:|
+| Source datasets | 9 |
+| Curated datasets | 16 |
+| Accepted sales fact rows / unique orders | 3 / 2 |
+| Accepted review fact rows | 2 |
+| Rejected rows | 2 |
+| Gross input item value | $355.00 |
+| Accepted curated sales total | $320.00 |
+| Accepted freight total | $35.00 |
+
+These are versioned sample-fixture results, not full Olist or managed-AWS measurements. See [`contracts/expected/baseline_snapshot.json`](contracts/expected/baseline_snapshot.json) for the complete expected evidence.
+
+## Reproduce and validate
+
+Python 3.11+, Node.js 22, Docker Engine with Compose v2, and Linux x86_64 are the supported toolchain. The deterministic, credential-free checks are:
+
+```bash
+python3 -m venv .venv
+. .venv/bin/activate
+python3 -m pip install -r requirements-dev.txt
+python3 -m pip install -e platforms/aws
+make aws-cdk-install
+make project-validate
+```
+
+To execute the data pipeline and PostgreSQL warehouse locally with a complete Olist directory:
+
+```bash
+make aws-local-up
+make aws-local-run DATASET_DIR=/absolute/path/to/olist BATCH_ID=project-run WAREHOUSE=1
+make aws-postgres-validate BATCH_ID=project-run
+make aws-local-status
+make aws-postgres-down
+make aws-local-down
+```
+
+The complete setup, stage-level commands, replay procedure, and cleanup behavior are in the [AWS implementation guide](platforms/aws/README.md). CI runs compilation, baseline/contracts, catalog metadata, state-machine, Redshift SQL, SCD2/replay simulation, TypeScript build, CDK synthesis without AWS credentials or deployment jobs.
+
+## Repository map
+
+```text
+contracts/                         Schemas, quality/replay/SCD2 rules, fixture, expected evidence
+platforms/aws/src/aws_etl/         Shared AWS-local/cloud transformation and publication modules
+platforms/aws/entrypoints/         Four managed Glue jobs plus the local PostgreSQL loader
+platforms/aws/catalog/             16 authoritative Glue table templates
+platforms/aws/orchestration/       32-state Step Functions ASL definition
+platforms/aws/sql/                 Separate PostgreSQL and Redshift warehouse SQL
+platforms/aws/infrastructure/cdk/  Six-stack AWS architecture
+scripts/                           Deterministic contract, catalog, SQL, simulation, hygiene validators
+docs/                              Project evidence, warehouse design, baseline, and authoritative plan
+platforms/azure/                   Preserved Azure Synapse reference implementation
+```
+
+## Scope and future work
+
+The repository does not claim managed AWS execution, production deployment, measured AWS cost, or empirical Redshift optimization. Optional future work is a budget-capped sandbox deployment, managed fixture/full-data evidence, measured cost and duration, and query-plan/skew/scan validation before changing the provisional Redshift physical design.
+
+The original Azure Synapse implementation remains available as a secondary preserved reference in [platforms/azure](platforms/azure/README.md); AWS is the primary implementation and project surface.

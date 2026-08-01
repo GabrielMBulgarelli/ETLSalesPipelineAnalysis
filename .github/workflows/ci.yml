@@ -1,0 +1,35 @@
+name: Project validation
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: platforms/aws/infrastructure/cdk/package-lock.json
+      - name: Install validation dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Install CDK dependencies
+        run: npm ci --prefix platforms/aws/infrastructure/cdk
+      - name: Run credential-free project gate
+        run: make project-validate
+      - name: Verify repository diff and tracked-file hygiene
+        run: |
+          git diff --check
+          test -z "$(git status --porcelain --untracked-files=no)"

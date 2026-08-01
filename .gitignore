@@ -2,9 +2,10 @@
 *.key
 *.pem
 *.env
-*.sh
-!platforms/aws/runtime/local/postgres.sh
 *.puml
+
+# Local Python environments
+.venv/
 
 # Notebook output
 .ipynb_checkpoints/

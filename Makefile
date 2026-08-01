@@ -1,7 +1,8 @@
 .PHONY: baseline-test contract-test phase-2-test baseline-validate contract-validate catalog-generate catalog-validate phase-2-validate \
 	aws-local-up aws-local-seed aws-local-process aws-local-validate aws-local-curate aws-local-run aws-local-status aws-local-down \
 	aws-postgres-up aws-postgres-load aws-postgres-validate aws-postgres-status aws-postgres-down aws-postgres-clean aws-local-warehouse \
-	aws-state-machine-validate aws-redshift-sql-validate aws-redshift-warehouse-validate aws-cdk-install aws-cdk-build aws-cdk-synth aws-execution-name
+	aws-state-machine-validate aws-redshift-sql-validate aws-redshift-warehouse-validate aws-cdk-install aws-cdk-build aws-cdk-synth aws-execution-name \
+	python-compile project-validate
 
 AWS_LOCAL_DIR := platforms/aws/runtime/local
 AWS_PYTHONPATH := platforms/aws/src
@@ -45,6 +46,13 @@ aws-cdk-build:
 
 aws-cdk-synth:
 	npm --prefix $(AWS_CDK_DIR) run synth
+
+python-compile:
+	python3 -m compileall -q platforms/aws/src platforms/aws/entrypoints/glue-jobs scripts
+
+
+project-validate: python-compile baseline-validate contract-validate catalog-validate aws-state-machine-validate \
+	aws-redshift-sql-validate aws-redshift-warehouse-validate aws-cdk-build aws-cdk-synth
 
 aws-execution-name:
 	@test -n "$(BATCH_ID)" || { echo "BATCH_ID is required" >&2; exit 2; }

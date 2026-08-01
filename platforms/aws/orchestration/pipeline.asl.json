@@ -1,5 +1,5 @@
 {
-  "Comment": "Authoritative Phase 7 AWS orchestration template. Phase 8 resolves ${...} tokens before deployment.",
+  "Comment": "Authoritative AWS orchestration template. CDK resolves ${...} tokens during synthesis.",
   "StartAt": "InitializeBatch",
   "States": {
     "InitializeBatch": {

@@ -15,7 +15,7 @@
                 },
                 "userProperties": [],
                 "typeProperties": {
-                    "notebookPath": "/Users/gabrielmbulgarelli@gmail.com/AMAZON_SALES_ANALYSIS/AMZAON_SALES_ANALYSIS_L0"
+                    "notebookPath": "/Shared/ETLSalesPipelineAnalysis/L0"
                 },
                 "linkedServiceName": {
                     "referenceName": "LS_ADB",
@@ -42,7 +42,7 @@
                 },
                 "userProperties": [],
                 "typeProperties": {
-                    "notebookPath": "/Users/gabrielmbulgarelli@gmail.com/AMAZON_SALES_ANALYSIS/AMAZON_SALES_ANALYSIS_L1"
+                    "notebookPath": "/Shared/ETLSalesPipelineAnalysis/L1"
                 },
                 "linkedServiceName": {
                     "referenceName": "LS_ADB",
