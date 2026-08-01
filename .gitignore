@@ -16,3 +16,7 @@ config.json
 # Python bytecode
 __pycache__/
 *.py[cod]
+
+# AWS CDK local dependencies and synthesized assets
+platforms/aws/infrastructure/cdk/node_modules/
+platforms/aws/infrastructure/cdk/cdk.out/

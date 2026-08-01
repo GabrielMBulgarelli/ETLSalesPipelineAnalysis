@@ -34,7 +34,7 @@ ENVIRONMENT_KEYS: dict[str, tuple[str, ...]] = {
     "environment": ("AWS_ETL_ENVIRONMENT",),
     "endpoint_url": ("AWS_ENDPOINT_URL", "AWS_ETL_ENDPOINT_URL"),
     "region": ("AWS_DEFAULT_REGION", "AWS_REGION", "AWS_ETL_REGION"),
-    "bucket": ("AWS_ETL_BUCKET",),
+    "bucket": ("CUSTOMER_AWS_ETL_BUCKET", "AWS_ETL_BUCKET"),
     "raw_prefix": ("AWS_ETL_RAW_PREFIX",),
     "manifest_prefix": ("AWS_ETL_MANIFEST_PREFIX",),
     "audit_prefix": ("AWS_ETL_AUDIT_PREFIX",),

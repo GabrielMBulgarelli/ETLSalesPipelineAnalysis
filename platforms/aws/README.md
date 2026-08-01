@@ -8,6 +8,7 @@ Phases 3 through 7 provide a local S3-compatible ingestion and AWS Glue 5 path f
 - Docker Engine with Docker Compose v2 (Podman compatibility is best-effort)
 - Python 3.11 or newer
 - `curl`
+- Node.js 22 and npm (for Phase 8 CDK synthesis)
 
 Install the package once in a virtual environment:
 
@@ -18,6 +19,41 @@ python3 -m pip install -e platforms/aws
 ```
 
 The complete Olist dataset stays outside Git. Do not copy it into this repository.
+
+## Synthesize the managed AWS infrastructure
+
+Phase 8 defines five CDK stacks under [`infrastructure/cdk`](infrastructure/cdk): Storage, Catalog, Processing, Orchestration, and Observability. Synthesis creates CloudFormation and native CDK file assets locally; it does not deploy resources. The lockfile pins CDK CLI 2.1133.0, CDK libraries 2.262.1, and the TypeScript toolchain, so installation uses `npm ci`:
+
+```bash
+make aws-cdk-install
+make aws-cdk-build
+make aws-cdk-synth
+```
+
+Defaults are `environment=dev`, `awsRegion=us-east-1`, Glue 5.0 `G.1X` with two workers, a 60-minute timeout, and one concurrent run. Only CDK context changes cloud settings; for example:
+
+```bash
+cd platforms/aws/infrastructure/cdk
+npm exec cdk synth --quiet \
+  -c environment=staging \
+  -c awsRegion=us-west-2 \
+  -c glueWorkerType=G.2X \
+  -c glueWorkerCount=4 \
+  -c glueTimeoutMinutes=90 \
+  -c glueMaxConcurrency=1
+```
+
+Allowed environments are `dev`, `staging`, and `prod`. An organization-managed boundary can be applied to every Glue and Step Functions execution role with `-c permissionsBoundaryArn=arn:aws:iam::<account>:policy/<name>`. The S3 bucket is retained, encrypted with SSE-S3, versioned, and blocks all public access. Staging objects and incomplete multipart uploads expire after seven days; noncurrent versions expire after 90 days; authoritative current data is retained indefinitely. Logs are retained for 30 days. Failure alarms intentionally have no actions or notification service.
+
+The Processing stack packages the committed Python package, each existing Glue entrypoint, a generated credential-free cloud config, and the committed contracts as CDK S3 assets. The Catalog stack renders the committed 16 unpartitioned table templates against the deployed bucket. The Orchestration stack resolves the three Glue job-name tokens in the committed 29-state Standard Workflow without changing its replay or state envelope semantics.
+
+Generate the deterministic Step Functions execution name before calling `StartExecution`; orchestration attempt defaults to 1:
+
+```bash
+make aws-execution-name ENVIRONMENT=dev BATCH_ID=my-batch ATTEMPT=1
+```
+
+The name hashes the canonical text `<batch-id>\n<attempt>`, adds a sanitized batch prefix, and stays within the 80-character Step Functions limit. Phase 8 provides the helper and infrastructure only: it adds no scheduler, event trigger, invocation service, or deployment action.
 
 ## Run locally
 
