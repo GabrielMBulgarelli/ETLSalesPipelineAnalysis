@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -12,7 +13,7 @@ from .config import AwsEtlConfig, load_config
 from .readers import load_batch_manifests
 from .schemas import load_contract
 from .storage import s3_client
-from .writers import parquet_keys
+from .writers import verify_marker_outputs
 
 
 @dataclass(frozen=True)
@@ -29,13 +30,25 @@ class JobContext:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Process one manifested raw Olist batch")
-    parser.add_argument("--batch-id", required=True)
+    parser.add_argument("--batch-id", "--BATCH_ID", dest="batch_id", required=True)
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--raw-contract", type=Path, required=True)
     parser.add_argument("--processed-contract", type=Path, required=True)
     parser.add_argument("--curated-contract", type=Path)
     parser.add_argument("--quality-contract", type=Path)
     parser.add_argument("--reference-contract", type=Path)
+    parser.add_argument("--SUBMISSIONS_JSON")
+    parser.add_argument("--BUCKET")
+    parser.add_argument("--RAW_PREFIX")
+    parser.add_argument("--PROCESSED_PREFIX")
+    parser.add_argument("--CURATED_PREFIX")
+    parser.add_argument("--REJECTED_PREFIX")
+    parser.add_argument("--QUALITY_PREFIX")
+    parser.add_argument("--STAGING_PREFIX")
+    parser.add_argument("--MANIFEST_PREFIX")
+    parser.add_argument("--AUDIT_PREFIX")
+    parser.add_argument("--CONTRACT_VERSION")
+    parser.add_argument("--PIPELINE_VERSION")
     return parser.parse_args()
 
 
@@ -59,9 +72,39 @@ def create_spark(config: AwsEtlConfig):
 def build_context(args: argparse.Namespace) -> JobContext:
     config = load_config(args.config)
     client = s3_client(config)
+    raw_contract = load_contract(args.raw_contract, "raw")
+    processed_contract = load_contract(args.processed_contract, "processed")
+    manifests = load_batch_manifests(client, config, args.batch_id)
+    expected_runtime = {
+        "BUCKET": config.bucket,
+        "RAW_PREFIX": config.raw_prefix,
+        "PROCESSED_PREFIX": config.processed_prefix,
+        "CURATED_PREFIX": config.curated_prefix,
+        "REJECTED_PREFIX": config.rejected_prefix,
+        "QUALITY_PREFIX": config.quality_prefix,
+        "STAGING_PREFIX": config.staging_prefix,
+        "MANIFEST_PREFIX": config.manifest_prefix,
+        "AUDIT_PREFIX": config.audit_prefix,
+        "CONTRACT_VERSION": str(processed_contract["contract_version"]),
+        "PIPELINE_VERSION": config.pipeline_version,
+    }
+    for argument, expected in expected_runtime.items():
+        supplied = getattr(args, argument)
+        if supplied is not None and supplied != expected:
+            raise ValueError(f"orchestration argument {argument} does not match the active runtime configuration")
+    if args.SUBMISSIONS_JSON is not None:
+        submissions = json.loads(args.SUBMISSIONS_JSON)
+        if not isinstance(submissions, list) or len(submissions) != len(manifests):
+            raise ValueError("orchestration submissions do not match the manifested batch")
+        identity = {
+            str(item.get("dataset")): str(item.get("manifest", {}).get("content_sha256"))
+            for item in submissions
+            if isinstance(item, dict)
+        }
+        if identity != manifest_fingerprints(manifests):
+            raise ValueError("orchestration submission identity does not match the manifested batch")
     return JobContext(args.batch_id, datetime.now(UTC).isoformat(timespec="microseconds").replace("+00:00", "Z"), config, client,
-                      create_spark(config), load_contract(args.raw_contract, "raw"), load_contract(args.processed_contract, "processed"),
-                      load_batch_manifests(client, config, args.batch_id))
+                      create_spark(config), raw_contract, processed_contract, manifests)
 
 
 def manifest_fingerprints(manifests: dict[str, dict[str, Any]]) -> dict[str, str]:
@@ -69,12 +112,18 @@ def manifest_fingerprints(manifests: dict[str, dict[str, Any]]) -> dict[str, str
 
 
 def completed_replay_matches(context: JobContext, summary: dict[str, Any]) -> bool:
-    if summary.get("manifest_content_sha256") != manifest_fingerprints(context.manifests):
-        raise RuntimeError("completed publication exists with different manifest identities")
-    for dataset in context.manifests:
-        for layer_prefix in (context.config.processed_prefix, context.config.rejected_prefix):
-            prefix = f"{layer_prefix}{dataset}/batch_id={context.batch_id}/"
-            if not parquet_keys(context.client, context.config.bucket, prefix):
-                layer = layer_prefix.rstrip("/").rsplit("/", 1)[-1]
-                raise RuntimeError(f"completed publication marker exists but {layer} output is missing for {dataset}")
+    identity = manifest_fingerprints(context.manifests)
+    verify_marker_outputs(
+        context.client,
+        context.config,
+        summary,
+        identity,
+        context.batch_id,
+        int(context.processed_contract["contract_version"]),
+    )
+    expected = {f"processed:{dataset}" for dataset in context.manifests} | {
+        f"rejected:{dataset}" for dataset in context.manifests
+    }
+    if set(summary["produced_datasets"]) != expected:
+        raise RuntimeError("processed completion marker does not declare the expected outputs")
     return True

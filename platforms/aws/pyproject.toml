@@ -12,5 +12,8 @@ dependencies = [
   "PyYAML>=6,<7",
 ]
 
+[project.scripts]
+aws-etl-state-machine-validate = "aws_etl.orchestration:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]

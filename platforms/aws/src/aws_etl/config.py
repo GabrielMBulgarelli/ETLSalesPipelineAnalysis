@@ -16,6 +16,7 @@ DEFAULTS: dict[str, str] = {
     "endpoint_url": "http://localhost:4566",
     "region": "us-east-1",
     "bucket": "ecommerce-sales-local",
+    "raw_prefix": "raw/",
     "manifest_prefix": "manifests/",
     "audit_prefix": "audit/",
     "processed_prefix": "processed/",
@@ -24,6 +25,7 @@ DEFAULTS: dict[str, str] = {
     "quality_prefix": "quality/",
     "staging_prefix": "staging/",
     "pipeline_version": "1.0.0",
+    "contract_version": "1",
     "aws_access_key_id": "test",
     "aws_secret_access_key": "test",
 }
@@ -33,6 +35,7 @@ ENVIRONMENT_KEYS: dict[str, tuple[str, ...]] = {
     "endpoint_url": ("AWS_ENDPOINT_URL", "AWS_ETL_ENDPOINT_URL"),
     "region": ("AWS_DEFAULT_REGION", "AWS_REGION", "AWS_ETL_REGION"),
     "bucket": ("AWS_ETL_BUCKET",),
+    "raw_prefix": ("AWS_ETL_RAW_PREFIX",),
     "manifest_prefix": ("AWS_ETL_MANIFEST_PREFIX",),
     "audit_prefix": ("AWS_ETL_AUDIT_PREFIX",),
     "processed_prefix": ("AWS_ETL_PROCESSED_PREFIX",),
@@ -41,6 +44,7 @@ ENVIRONMENT_KEYS: dict[str, tuple[str, ...]] = {
     "quality_prefix": ("AWS_ETL_QUALITY_PREFIX",),
     "staging_prefix": ("AWS_ETL_STAGING_PREFIX",),
     "pipeline_version": ("AWS_ETL_PIPELINE_VERSION",),
+    "contract_version": ("AWS_ETL_CONTRACT_VERSION",),
     "aws_access_key_id": ("AWS_ACCESS_KEY_ID",),
     "aws_secret_access_key": ("AWS_SECRET_ACCESS_KEY",),
     "aws_session_token": ("AWS_SESSION_TOKEN",),
@@ -63,6 +67,7 @@ class AwsEtlConfig:
     endpoint_url: str | None
     region: str
     bucket: str
+    raw_prefix: str
     manifest_prefix: str
     audit_prefix: str
     processed_prefix: str
@@ -71,6 +76,7 @@ class AwsEtlConfig:
     quality_prefix: str
     staging_prefix: str
     pipeline_version: str
+    contract_version: str
     aws_access_key_id: str | None
     aws_secret_access_key: str | None
     aws_session_token: str | None = None
@@ -84,6 +90,8 @@ class AwsEtlConfig:
             raise ValueError("bucket must not be empty")
         if not self.pipeline_version:
             raise ValueError("pipeline_version must not be empty")
+        if not self.contract_version:
+            raise ValueError("contract_version must not be empty")
         if bool(self.aws_access_key_id) != bool(self.aws_secret_access_key):
             raise ValueError("AWS access key ID and secret access key must be supplied together")
 
@@ -145,6 +153,7 @@ def load_config(
         endpoint_url=str(values["endpoint_url"]).strip() if values.get("endpoint_url") else None,
         region=str(values["region"]).strip(),
         bucket=str(values["bucket"]).strip(),
+        raw_prefix=_prefix(str(values["raw_prefix"]), "raw_prefix"),
         manifest_prefix=_prefix(str(values["manifest_prefix"]), "manifest_prefix"),
         audit_prefix=_prefix(str(values["audit_prefix"]), "audit_prefix"),
         processed_prefix=_prefix(str(values["processed_prefix"]), "processed_prefix"),
@@ -153,6 +162,7 @@ def load_config(
         quality_prefix=_prefix(str(values["quality_prefix"]), "quality_prefix"),
         staging_prefix=_prefix(str(values["staging_prefix"]), "staging_prefix"),
         pipeline_version=str(values["pipeline_version"]).strip(),
+        contract_version=str(values["contract_version"]).strip(),
         aws_access_key_id=str(values["aws_access_key_id"]).strip() if values.get("aws_access_key_id") else None,
         aws_secret_access_key=str(values["aws_secret_access_key"]).strip() if values.get("aws_secret_access_key") else None,
         aws_session_token=str(values["aws_session_token"]).strip() if values.get("aws_session_token") else None,

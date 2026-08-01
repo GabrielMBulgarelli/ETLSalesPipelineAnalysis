@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import sys
+from uuid import uuid4
 
 from aws_etl.cleansing import classify_rows
 from aws_etl.deduplication import deduplicate
@@ -77,11 +78,32 @@ def main() -> int:
                         f"{context.config.rejected_prefix}{dataset}/batch_id={context.batch_id}/")
         summary = {
             "batch_id": context.batch_id,
+            "attempt_id": str(uuid4()),
             "batch_timestamp": next(iter(context.manifests.values()))["batch_timestamp"],
             "processing_timestamp": context.processing_timestamp,
+            "source_content_identity": manifest_fingerprints(context.manifests),
+            "contract_version": context.processed_contract["contract_version"],
+            "pipeline_version": context.config.pipeline_version,
             "raw_contract_version": context.raw_contract["contract_version"],
             "processed_contract_version": context.processed_contract["contract_version"],
             "manifest_content_sha256": manifest_fingerprints(context.manifests),
+            "produced_datasets": {
+                **{
+                    f"processed:{dataset}": {
+                        "prefix": f"{context.config.processed_prefix}{dataset}/batch_id={context.batch_id}/",
+                        "row_count": summaries[dataset]["processed_rows"],
+                    }
+                    for dataset in DATASETS
+                },
+                **{
+                    f"rejected:{dataset}": {
+                        "prefix": f"{context.config.rejected_prefix}{dataset}/batch_id={context.batch_id}/",
+                        "row_count": summaries[dataset]["rejected_rows"],
+                    }
+                    for dataset in DATASETS
+                },
+            },
+            "row_counts": summaries,
             "datasets": summaries,
             "totals": {"source_rows": sum(source_counts.values()),
                        "processed_rows": sum(item["processed_rows"] for item in summaries.values()),

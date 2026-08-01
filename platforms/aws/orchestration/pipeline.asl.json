@@ -1,0 +1,250 @@
+{
+  "Comment": "Authoritative Phase 7 AWS orchestration template. Phase 8 resolves ${...} tokens before deployment.",
+  "StartAt": "InitializeBatch",
+  "States": {
+    "InitializeBatch": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:s3:putObject",
+      "Parameters": {
+        "Bucket.$": "$.storage.bucket",
+        "Key.$": "$.orchestration.claim_key",
+        "Body.$": "States.JsonToString($.orchestration.claim)",
+        "ContentType": "application/json",
+        "IfNoneMatch": "*",
+        "Metadata": {
+          "owner.$": "$$.Execution.Id",
+          "evidencesha256.$": "$.orchestration.claim_hash"
+        }
+      },
+      "ResultPath": "$.orchestration.claim_result",
+      "Next": "ClassifyReplay",
+      "Catch": [
+        {
+          "ErrorEquals": ["S3.PreconditionFailedException", "S3.ConditionalRequestConflictException"],
+          "ResultPath": "$.orchestration.claim_error",
+          "Next": "ReadExecutionClaim"
+        },
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.orchestration.claim_error",
+          "Next": "ReadExecutionClaim"
+        }
+      ]
+    },
+    "ReadExecutionClaim": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:s3:headObject",
+      "Parameters": {
+        "Bucket.$": "$.storage.bucket",
+        "Key.$": "$.orchestration.claim_key"
+      },
+      "ResultPath": "$.orchestration.existing_claim",
+      "Next": "VerifyExecutionClaim",
+      "Catch": [{"ErrorEquals": ["States.ALL"], "ResultPath": "$.orchestration.failure", "Next": "PrepareInitializeFailure"}]
+    },
+    "VerifyExecutionClaim": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "And": [
+            {"Variable": "$.orchestration.existing_claim.Metadata.owner", "StringEqualsPath": "$$.Execution.Id"},
+            {"Variable": "$.orchestration.existing_claim.Metadata.evidencesha256", "StringEqualsPath": "$.orchestration.claim_hash"}
+          ],
+          "Next": "ClassifyReplay"
+        }
+      ],
+      "Default": "PrepareContentionFailure"
+    },
+    "ClassifyReplay": {
+      "Type": "Choice",
+      "Choices": [
+        {"Variable": "$.orchestration.replay_class", "StringEquals": "NO_OP", "Next": "PrepareNoOpCompletion"},
+        {"Variable": "$.orchestration.replay_class", "StringEquals": "REUSED_FAILURE", "Next": "PrepareReusedFailure"},
+        {"Variable": "$.orchestration.replay_class", "StringEquals": "CONTINUE", "Next": "ResumeDecision"}
+      ],
+      "Default": "PrepareReplayFailure"
+    },
+    "ResumeDecision": {
+      "Type": "Choice",
+      "Choices": [
+        {"Variable": "$.orchestration.next_stage", "StringEquals": "PROCESS_RAW", "Next": "ProcessRaw"},
+        {"Variable": "$.orchestration.next_stage", "StringEquals": "VALIDATE_PROCESSED", "Next": "ValidateProcessed"},
+        {"Variable": "$.orchestration.next_stage", "StringEquals": "BUILD_CURATED", "Next": "BuildCurated"},
+        {"Variable": "$.orchestration.next_stage", "StringEquals": "COMPLETE", "Next": "PreparePipelineCompletion"}
+      ],
+      "Default": "PrepareResumeFailure"
+    },
+    "ProcessRaw": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "${ProcessRawGlueJobName}",
+        "Arguments": {
+          "--BATCH_ID.$": "$.batch.id",
+          "--SUBMISSIONS_JSON.$": "States.JsonToString($.submissions)",
+          "--BUCKET.$": "$.storage.bucket",
+          "--RAW_PREFIX.$": "$.storage.raw_prefix",
+          "--PROCESSED_PREFIX.$": "$.storage.processed_prefix",
+          "--CURATED_PREFIX.$": "$.storage.curated_prefix",
+          "--REJECTED_PREFIX.$": "$.storage.rejected_prefix",
+          "--QUALITY_PREFIX.$": "$.storage.quality_prefix",
+          "--STAGING_PREFIX.$": "$.storage.staging_prefix",
+          "--MANIFEST_PREFIX.$": "$.storage.manifest_prefix",
+          "--AUDIT_PREFIX.$": "$.storage.audit_prefix",
+          "--CONTRACT_VERSION.$": "$.batch.contract_version",
+          "--PIPELINE_VERSION.$": "$.batch.pipeline_version"
+        }
+      },
+      "ResultPath": "$.orchestration.stages.process_raw",
+      "Next": "ValidateProcessed",
+      "Retry": [{"ErrorEquals": ["Glue.ConcurrentRunsExceededException", "Glue.InternalServiceException", "Glue.OperationTimeoutException"], "IntervalSeconds": 5, "BackoffRate": 2.0, "MaxAttempts": 2}],
+      "Catch": [
+        {"ErrorEquals": ["Glue.ConcurrentRunsExceededException", "Glue.InternalServiceException", "Glue.OperationTimeoutException"], "ResultPath": "$.orchestration.failure", "Next": "PrepareRetryableProcessFailure"},
+        {"ErrorEquals": ["States.ALL"], "ResultPath": "$.orchestration.failure", "Next": "PrepareProcessFailure"}
+      ]
+    },
+    "ValidateProcessed": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "${ValidateProcessedGlueJobName}",
+        "Arguments": {
+          "--BATCH_ID.$": "$.batch.id",
+          "--SUBMISSIONS_JSON.$": "States.JsonToString($.submissions)",
+          "--BUCKET.$": "$.storage.bucket",
+          "--RAW_PREFIX.$": "$.storage.raw_prefix",
+          "--PROCESSED_PREFIX.$": "$.storage.processed_prefix",
+          "--CURATED_PREFIX.$": "$.storage.curated_prefix",
+          "--REJECTED_PREFIX.$": "$.storage.rejected_prefix",
+          "--QUALITY_PREFIX.$": "$.storage.quality_prefix",
+          "--STAGING_PREFIX.$": "$.storage.staging_prefix",
+          "--MANIFEST_PREFIX.$": "$.storage.manifest_prefix",
+          "--AUDIT_PREFIX.$": "$.storage.audit_prefix",
+          "--CONTRACT_VERSION.$": "$.batch.contract_version",
+          "--PIPELINE_VERSION.$": "$.batch.pipeline_version"
+        }
+      },
+      "ResultPath": "$.orchestration.stages.validate_processed",
+      "Next": "ReadValidationMarker",
+      "Retry": [{"ErrorEquals": ["Glue.ConcurrentRunsExceededException", "Glue.InternalServiceException", "Glue.OperationTimeoutException"], "IntervalSeconds": 5, "BackoffRate": 2.0, "MaxAttempts": 2}],
+      "Catch": [
+        {"ErrorEquals": ["Glue.ConcurrentRunsExceededException", "Glue.InternalServiceException", "Glue.OperationTimeoutException"], "ResultPath": "$.orchestration.failure", "Next": "PrepareRetryableValidationFailure"},
+        {"ErrorEquals": ["States.ALL"], "ResultPath": "$.orchestration.failure", "Next": "PrepareValidationFailure"}
+      ]
+    },
+    "ReadValidationMarker": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:s3:getObject",
+      "Parameters": {"Bucket.$": "$.storage.bucket", "Key.$": "$.orchestration.validation_marker_key"},
+      "ResultSelector": {"marker.$": "States.StringToJson($.Body)"},
+      "ResultPath": "$.orchestration.validation",
+      "Next": "QualityDecision",
+      "Catch": [{"ErrorEquals": ["States.ALL"], "ResultPath": "$.orchestration.failure", "Next": "PrepareValidationFailure"}]
+    },
+    "QualityDecision": {
+      "Type": "Choice",
+      "Choices": [
+        {"Variable": "$.orchestration.validation.marker.terminal_outcome", "StringEquals": "FAILED", "Next": "PrepareQualityFailure"},
+        {"Variable": "$.orchestration.validation.marker.terminal_outcome", "StringEquals": "PASSED", "Next": "BuildCurated"},
+        {"Variable": "$.orchestration.validation.marker.terminal_outcome", "StringEquals": "PASSED_WITH_REJECTIONS", "Next": "BuildCurated"}
+      ],
+      "Default": "PrepareValidationFailure"
+    },
+    "BuildCurated": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "${BuildCuratedGlueJobName}",
+        "Arguments": {
+          "--BATCH_ID.$": "$.batch.id",
+          "--SUBMISSIONS_JSON.$": "States.JsonToString($.submissions)",
+          "--BUCKET.$": "$.storage.bucket",
+          "--RAW_PREFIX.$": "$.storage.raw_prefix",
+          "--PROCESSED_PREFIX.$": "$.storage.processed_prefix",
+          "--CURATED_PREFIX.$": "$.storage.curated_prefix",
+          "--REJECTED_PREFIX.$": "$.storage.rejected_prefix",
+          "--QUALITY_PREFIX.$": "$.storage.quality_prefix",
+          "--STAGING_PREFIX.$": "$.storage.staging_prefix",
+          "--MANIFEST_PREFIX.$": "$.storage.manifest_prefix",
+          "--AUDIT_PREFIX.$": "$.storage.audit_prefix",
+          "--CONTRACT_VERSION.$": "$.batch.contract_version",
+          "--PIPELINE_VERSION.$": "$.batch.pipeline_version"
+        }
+      },
+      "ResultPath": "$.orchestration.stages.build_curated",
+      "Next": "PreparePipelineCompletion",
+      "Retry": [{"ErrorEquals": ["Glue.ConcurrentRunsExceededException", "Glue.InternalServiceException", "Glue.OperationTimeoutException"], "IntervalSeconds": 5, "BackoffRate": 2.0, "MaxAttempts": 2}],
+      "Catch": [
+        {"ErrorEquals": ["Glue.ConcurrentRunsExceededException", "Glue.InternalServiceException", "Glue.OperationTimeoutException"], "ResultPath": "$.orchestration.failure", "Next": "PrepareRetryableCurationFailure"},
+        {"ErrorEquals": ["States.ALL"], "ResultPath": "$.orchestration.failure", "Next": "PrepareCurationFailure"}
+      ]
+    },
+    "PrepareInitializeFailure": {"Type": "Pass", "Parameters": {"Retryable": false, "ProviderEvidence": {"FailureStage": "InitializeBatch", "GlueJobRunID": null, "FailureCode.$": "$.orchestration.failure.Error", "FailureMessage.$": "$.orchestration.failure.Cause", "ExecutionID.$": "$$.Execution.Id", "RetryCount": 0}}, "ResultPath": "$.orchestration.failure_evidence", "Next": "RecordFailure"},
+    "PrepareContentionFailure": {"Type": "Pass", "Parameters": {"Retryable": true, "ProviderEvidence": {"FailureStage": "InitializeBatch", "GlueJobRunID": null, "FailureCode": "ORCHESTRATION_CONTENTION", "FailureMessage": "Execution claim is owned by another execution", "ExecutionID.$": "$$.Execution.Id", "RetryCount": 0}}, "ResultPath": "$.orchestration.failure_evidence", "Next": "RecordFailure"},
+    "PrepareReplayFailure": {"Type": "Pass", "Parameters": {"Retryable": false, "ProviderEvidence": {"FailureStage": "ClassifyReplay", "GlueJobRunID": null, "FailureCode": "INVALID_REPLAY_CLASS", "FailureMessage": "Replay classification is invalid", "ExecutionID.$": "$$.Execution.Id", "RetryCount": 0}}, "ResultPath": "$.orchestration.failure_evidence", "Next": "RecordFailure"},
+    "PrepareResumeFailure": {"Type": "Pass", "Parameters": {"Retryable": false, "ProviderEvidence": {"FailureStage": "ClassifyReplay", "GlueJobRunID": null, "FailureCode": "INVALID_STAGE_MARKER", "FailureMessage": "Stage marker or output evidence does not match", "ExecutionID.$": "$$.Execution.Id", "RetryCount": 0}}, "ResultPath": "$.orchestration.failure_evidence", "Next": "RecordFailure"},
+    "PrepareReusedFailure": {"Type": "Pass", "Parameters": {"Retryable": false, "ProviderEvidence": {"FailureStage": "ClassifyReplay", "GlueJobRunID": null, "FailureCode": "REUSED_FAILURE", "FailureMessage": "Prior deterministic failure reused without execution", "ExecutionID.$": "$$.Execution.Id", "RetryCount": 0}}, "ResultPath": "$.orchestration.failure_evidence", "Next": "RecordFailure"},
+    "PrepareProcessFailure": {"Type": "Pass", "Parameters": {"Retryable": false, "ProviderEvidence": {"FailureStage": "ProcessRaw", "GlueJobRunID": null, "FailureCode.$": "$.orchestration.failure.Error", "FailureMessage.$": "$.orchestration.failure.Cause", "ExecutionID.$": "$$.Execution.Id", "RetryCount": 0}}, "ResultPath": "$.orchestration.failure_evidence", "Next": "RecordFailure"},
+    "PrepareRetryableProcessFailure": {"Type": "Pass", "Parameters": {"Retryable": true, "ProviderEvidence": {"FailureStage": "ProcessRaw", "GlueJobRunID": null, "FailureCode.$": "$.orchestration.failure.Error", "FailureMessage.$": "$.orchestration.failure.Cause", "ExecutionID.$": "$$.Execution.Id", "RetryCount": 2}}, "ResultPath": "$.orchestration.failure_evidence", "Next": "RecordFailure"},
+    "PrepareValidationFailure": {"Type": "Pass", "Parameters": {"Retryable": false, "ProviderEvidence": {"FailureStage": "ValidateProcessed", "GlueJobRunID": null, "FailureCode.$": "$.orchestration.failure.Error", "FailureMessage.$": "$.orchestration.failure.Cause", "ExecutionID.$": "$$.Execution.Id", "RetryCount": 0}}, "ResultPath": "$.orchestration.failure_evidence", "Next": "RecordFailure"},
+    "PrepareRetryableValidationFailure": {"Type": "Pass", "Parameters": {"Retryable": true, "ProviderEvidence": {"FailureStage": "ValidateProcessed", "GlueJobRunID": null, "FailureCode.$": "$.orchestration.failure.Error", "FailureMessage.$": "$.orchestration.failure.Cause", "ExecutionID.$": "$$.Execution.Id", "RetryCount": 2}}, "ResultPath": "$.orchestration.failure_evidence", "Next": "RecordFailure"},
+    "PrepareQualityFailure": {"Type": "Pass", "Parameters": {"Retryable": false, "ProviderEvidence": {"FailureStage": "ValidateProcessed", "GlueJobRunID.$": "$.orchestration.stages.validate_processed.JobRunId", "FailureCode": "QUALITY_FAILED", "FailureMessage": "Validation marker has FAILED terminal outcome", "ExecutionID.$": "$$.Execution.Id", "RetryCount": 0}}, "ResultPath": "$.orchestration.failure_evidence", "Next": "RecordFailure"},
+    "PrepareCurationFailure": {"Type": "Pass", "Parameters": {"Retryable": false, "ProviderEvidence": {"FailureStage": "BuildCurated", "GlueJobRunID": null, "FailureCode.$": "$.orchestration.failure.Error", "FailureMessage.$": "$.orchestration.failure.Cause", "ExecutionID.$": "$$.Execution.Id", "RetryCount": 0}}, "ResultPath": "$.orchestration.failure_evidence", "Next": "RecordFailure"},
+    "PrepareRetryableCurationFailure": {"Type": "Pass", "Parameters": {"Retryable": true, "ProviderEvidence": {"FailureStage": "BuildCurated", "GlueJobRunID": null, "FailureCode.$": "$.orchestration.failure.Error", "FailureMessage.$": "$.orchestration.failure.Cause", "ExecutionID.$": "$$.Execution.Id", "RetryCount": 2}}, "ResultPath": "$.orchestration.failure_evidence", "Next": "RecordFailure"},
+    "PrepareNoOpCompletion": {"Type": "Pass", "Result": "NO_OP", "ResultPath": "$.orchestration.terminal_reason", "Next": "RecordCompletion"},
+    "PreparePipelineCompletion": {"Type": "Pass", "Result": "PIPELINE_COMPLETE", "ResultPath": "$.orchestration.terminal_reason", "Next": "RecordCompletion"},
+    "RecordCompletion": {
+      "Type": "Map",
+      "ItemsPath": "$.submissions",
+      "ItemSelector": {"batch.$": "$.batch", "storage.$": "$.storage", "submissions.$": "$.submissions", "submission.$": "$$.Map.Item.Value", "orchestration.$": "$.orchestration", "execution_id.$": "$$.Execution.Id"},
+      "ItemProcessor": {
+        "ProcessorConfig": {"Mode": "INLINE"},
+        "StartAt": "PutCompletionEvidence",
+        "States": {
+          "PutCompletionEvidence": {
+            "Type": "Task", "Resource": "arn:aws:states:::aws-sdk:s3:putObject",
+            "Parameters": {"Bucket.$": "$.storage.bucket", "Key.$": "$.submission.completion_audit_key", "Body.$": "States.JsonToString($.submission.completion_record)", "ContentType": "application/json", "IfNoneMatch": "*", "Metadata": {"owner.$": "$.execution_id", "submissionid.$": "$.submission.submission_id", "evidencesha256.$": "$.submission.completion_evidence_hash"}},
+            "End": true,
+            "Catch": [{"ErrorEquals": ["States.ALL"], "ResultPath": "$.write_error", "Next": "HeadCompletionEvidence"}]
+          },
+          "HeadCompletionEvidence": {"Type": "Task", "Resource": "arn:aws:states:::aws-sdk:s3:headObject", "Parameters": {"Bucket.$": "$.storage.bucket", "Key.$": "$.submission.completion_audit_key"}, "ResultPath": "$.existing", "Next": "VerifyCompletionEvidence"},
+          "VerifyCompletionEvidence": {"Type": "Choice", "Choices": [{"And": [{"Variable": "$.existing.Metadata.submissionid", "StringEqualsPath": "$.submission.submission_id"}, {"Variable": "$.existing.Metadata.evidencesha256", "StringEqualsPath": "$.submission.completion_evidence_hash"}], "Next": "CompletionEvidenceMatches"}], "Default": "CompletionEvidenceConflict"},
+          "CompletionEvidenceMatches": {"Type": "Succeed"},
+          "CompletionEvidenceConflict": {"Type": "Fail", "Error": "ImmutableEvidenceConflict", "Cause": "Existing completion evidence has different identity or payload"}
+        }
+      },
+      "ResultPath": "$.orchestration.audit_results",
+      "Next": "Succeed",
+      "Catch": [{"ErrorEquals": ["States.ALL"], "Next": "ImmutableAuditFailure"}]
+    },
+    "RecordFailure": {
+      "Type": "Map",
+      "ItemsPath": "$.submissions",
+      "ItemSelector": {"batch.$": "$.batch", "storage.$": "$.storage", "submissions.$": "$.submissions", "submission.$": "$$.Map.Item.Value", "orchestration.$": "$.orchestration", "failure_patch.$": "$.orchestration.failure_evidence", "execution_id.$": "$$.Execution.Id"},
+      "ItemProcessor": {
+        "ProcessorConfig": {"Mode": "INLINE"},
+        "StartAt": "MergeFailureEvidence",
+        "States": {
+          "MergeFailureEvidence": {"Type": "Pass", "Parameters": {"document.$": "States.JsonMerge($.submission.failure_record, $.failure_patch, false)"}, "ResultPath": "$.evidence", "Next": "HashFailureEvidence"},
+          "HashFailureEvidence": {"Type": "Pass", "Parameters": {"document.$": "$.evidence.document", "sha256.$": "States.Hash(States.JsonToString($.evidence.document), 'SHA-256')"}, "ResultPath": "$.evidence", "Next": "PutFailureEvidence"},
+          "PutFailureEvidence": {
+            "Type": "Task", "Resource": "arn:aws:states:::aws-sdk:s3:putObject",
+            "Parameters": {"Bucket.$": "$.storage.bucket", "Key.$": "$.submission.failure_audit_key", "Body.$": "States.JsonToString($.evidence.document)", "ContentType": "application/json", "IfNoneMatch": "*", "Metadata": {"owner.$": "$.execution_id", "submissionid.$": "$.submission.submission_id", "evidencesha256.$": "$.evidence.sha256"}},
+            "End": true,
+            "Catch": [{"ErrorEquals": ["States.ALL"], "ResultPath": "$.write_error", "Next": "HeadFailureEvidence"}]
+          },
+          "HeadFailureEvidence": {"Type": "Task", "Resource": "arn:aws:states:::aws-sdk:s3:headObject", "Parameters": {"Bucket.$": "$.storage.bucket", "Key.$": "$.submission.failure_audit_key"}, "ResultPath": "$.existing", "Next": "VerifyFailureEvidence"},
+          "VerifyFailureEvidence": {"Type": "Choice", "Choices": [{"And": [{"Variable": "$.existing.Metadata.submissionid", "StringEqualsPath": "$.submission.submission_id"}, {"Variable": "$.existing.Metadata.evidencesha256", "StringEqualsPath": "$.evidence.sha256"}], "Next": "FailureEvidenceMatches"}], "Default": "FailureEvidenceConflict"},
+          "FailureEvidenceMatches": {"Type": "Succeed"},
+          "FailureEvidenceConflict": {"Type": "Fail", "Error": "ImmutableEvidenceConflict", "Cause": "Existing failure evidence has different identity or payload"}
+        }
+      },
+      "ResultPath": "$.orchestration.audit_results",
+      "Next": "Fail",
+      "Catch": [{"ErrorEquals": ["States.ALL"], "Next": "ImmutableAuditFailure"}]
+    },
+    "ImmutableAuditFailure": {"Type": "Fail", "Error": "ImmutableAuditWriteFailed", "Cause": "Conditional audit write was not a matching idempotent replay"},
+    "Succeed": {"Type": "Succeed"},
+    "Fail": {"Type": "Fail", "Error": "PipelineFailed", "Cause": "See immutable audit evidence"}
+  }
+}

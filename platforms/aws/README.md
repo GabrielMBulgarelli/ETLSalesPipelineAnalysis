@@ -1,6 +1,6 @@
 # AWS-local raw-to-curated pipeline
 
-Phases 3 through 6 provide a local S3-compatible ingestion and AWS Glue 5 path from the nine Olist source files through validated processed data, curated dimensions and facts, eight aggregates, and explicit curated catalog metadata. LocalStack and the Glue container do not validate managed AWS IAM, networking, scaling, durability, or orchestration behavior.
+Phases 3 through 7 provide a local S3-compatible ingestion and AWS Glue 5 path from the nine Olist source files through validated processed data, curated dimensions and facts, eight aggregates, explicit curated catalog metadata, and a Step Functions orchestration definition. LocalStack and the Glue container do not validate managed AWS IAM, networking, scaling, durability, or managed Step Functions execution behavior.
 
 ## Prerequisites
 
@@ -23,12 +23,24 @@ The complete Olist dataset stays outside Git. Do not copy it into this repositor
 
 ```bash
 make aws-local-up
+make aws-local-run DATASET_DIR=/absolute/path/to/olist BATCH_ID=my-batch
+# The stage-specific commands below remain useful for diagnosis.
 make aws-local-seed DATASET_DIR=/absolute/path/to/olist BATCH_ID=my-batch
 make aws-local-process BATCH_ID=my-batch
 make aws-local-validate BATCH_ID=my-batch
 make aws-local-curate BATCH_ID=my-batch
 make aws-local-status
 make aws-local-down
+```
+
+`aws-local-run` is the authoritative local orchestration path. It initializes the nested batch/storage/submissions/orchestration envelope, classifies each of the nine dataset submissions, acquires an immutable execution claim, and runs processing, validation, and curation synchronously in that order. A matching completed replay records a no-op without starting Glue. A partial run resumes at the first incomplete stage only when every earlier immutable marker matches the batch, all manifested content hashes, contract and pipeline versions, and every expected Parquet output. A marker/output mismatch fails deterministically and is never overwritten.
+
+The authoritative AWS state machine template is [`orchestration/pipeline.asl.json`](orchestration/pipeline.asl.json). It contains the deployment tokens `${ProcessRawGlueJobName}`, `${ValidateProcessedGlueJobName}`, and `${BuildCuratedGlueJobName}`; Phase 8 must resolve all three before deployment. The Glue tasks retry only `ConcurrentRunsExceededException`, `InternalServiceException`, and `OperationTimeoutException`, with a 5-second initial interval, 2.0 backoff, and two retry attempts. Deterministic validation, missing-job, invalid-input, access, `reject-dataset`, and `fail-batch` outcomes are not retried.
+
+Execution claims live under `staging/orchestration/claims/` and are create-only, keyed by batch and orchestration attempt, with the execution owner recorded in both the payload and metadata. Completion and failure records also use conditional `PutObject` with `IfNoneMatch: "*"`; an existing object is accepted only when its submission identity and canonical evidence hash match. AWS details remain isolated under `ProviderEvidence` in provider-specific audit payloads. Validate the ASL graph, exact job tokens and retry boundary, conditional writes, and local retry classification with:
+
+```bash
+make aws-state-machine-validate
 ```
 
 The Glue image is configured once in [`runtime/local/glue.env`](runtime/local/glue.env). It is the official x86-64 Glue 5.0.9 image pinned by digest. The job uses Python 3.11, Java 17, Spark 3.5.4, and UTC. Monetary fields remain `decimal(10,2)`; unqualified logical decimals use `decimal(38,18)`. CSV schema inference is never used.
