@@ -1,7 +1,7 @@
 .PHONY: baseline-test contract-test phase-2-test baseline-validate contract-validate catalog-generate catalog-validate phase-2-validate \
 	aws-local-up aws-local-seed aws-local-process aws-local-validate aws-local-curate aws-local-run aws-local-status aws-local-down \
 	aws-postgres-up aws-postgres-load aws-postgres-validate aws-postgres-status aws-postgres-down aws-postgres-clean aws-local-warehouse \
-	aws-state-machine-validate aws-cdk-install aws-cdk-build aws-cdk-synth aws-execution-name
+	aws-state-machine-validate aws-redshift-sql-validate aws-redshift-warehouse-validate aws-cdk-install aws-cdk-build aws-cdk-synth aws-execution-name
 
 AWS_LOCAL_DIR := platforms/aws/runtime/local
 AWS_PYTHONPATH := platforms/aws/src
@@ -30,6 +30,12 @@ catalog-validate:
 aws-state-machine-validate:
 	PYTHONPATH=$(AWS_PYTHONPATH) python3 -m aws_etl.orchestration platforms/aws/orchestration/pipeline.asl.json
 	PYTHONPATH=$(AWS_PYTHONPATH) python3 $(AWS_LOCAL_DIR)/pipeline_runner.py --self-check
+
+aws-redshift-sql-validate:
+	python3 scripts/validate_redshift_sql.py
+
+aws-redshift-warehouse-validate:
+	python3 scripts/validate_redshift_warehouse.py
 
 aws-cdk-install:
 	npm --prefix $(AWS_CDK_DIR) ci

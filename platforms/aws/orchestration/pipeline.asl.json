@@ -172,12 +172,74 @@
         }
       },
       "ResultPath": "$.orchestration.stages.build_curated",
-      "Next": "PreparePipelineCompletion",
+      "Next": "LoadWarehouse",
       "Retry": [{"ErrorEquals": ["Glue.ConcurrentRunsExceededException", "Glue.InternalServiceException", "Glue.OperationTimeoutException"], "IntervalSeconds": 5, "BackoffRate": 2.0, "MaxAttempts": 2}],
       "Catch": [
         {"ErrorEquals": ["Glue.ConcurrentRunsExceededException", "Glue.InternalServiceException", "Glue.OperationTimeoutException"], "ResultPath": "$.orchestration.failure", "Next": "PrepareRetryableCurationFailure"},
         {"ErrorEquals": ["States.ALL"], "ResultPath": "$.orchestration.failure", "Next": "PrepareCurationFailure"}
       ]
+    },
+    "LoadWarehouse": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "${LoadWarehouseGlueJobName}",
+        "Arguments": {
+          "--BATCH_ID.$": "$.batch.id",
+          "--SUBMISSIONS_JSON.$": "States.JsonToString($.submissions)",
+          "--BUCKET.$": "$.storage.bucket",
+          "--RAW_PREFIX.$": "$.storage.raw_prefix",
+          "--PROCESSED_PREFIX.$": "$.storage.processed_prefix",
+          "--CURATED_PREFIX.$": "$.storage.curated_prefix",
+          "--REJECTED_PREFIX.$": "$.storage.rejected_prefix",
+          "--QUALITY_PREFIX.$": "$.storage.quality_prefix",
+          "--STAGING_PREFIX.$": "$.storage.staging_prefix",
+          "--MANIFEST_PREFIX.$": "$.storage.manifest_prefix",
+          "--AUDIT_PREFIX.$": "$.storage.audit_prefix",
+          "--CONTRACT_VERSION.$": "$.batch.contract_version",
+          "--PIPELINE_VERSION.$": "$.batch.pipeline_version",
+          "--LOAD_ATTEMPT_ID.$": "States.Format('{}-warehouse', $$.Execution.Name)",
+          "--WAREHOUSE_RETRY_COUNT": "0"
+        }
+      },
+      "ResultPath": "$.orchestration.stages.load_warehouse",
+      "Next": "PrepareWarehouseSuccess",
+      "Retry": [{"ErrorEquals": ["RedshiftData.InternalServerException", "RedshiftData.ThrottlingException", "RedshiftData.ServiceUnavailableException"], "IntervalSeconds": 5, "BackoffRate": 2.0, "MaxAttempts": 2}],
+      "Catch": [{"ErrorEquals": ["States.ALL"], "ResultPath": "$.orchestration.failure", "Next": "PrepareWarehouseFailure"}]
+    },
+    "PrepareWarehouseSuccess": {
+      "Type": "Pass",
+      "Parameters": {
+        "GlueJobRunID.$": "$.orchestration.stages.load_warehouse.JobRunId",
+        "LoadAttemptID.$": "States.Format('{}-warehouse', $$.Execution.Name)",
+        "LoadAttemptEvidenceKey.$": "States.Format('{}warehouse/redshift/attempts/{}-warehouse.json', $.storage.audit_prefix, $$.Execution.Name)",
+        "CompletionEvidenceKey.$": "States.Format('{}warehouse/redshift/completed/batch_id={}/publication.json', $.storage.audit_prefix, $.batch.id)",
+        "PublicationFingerprint": "recorded-in-authoritative-redshift-registry-and-s3-marker",
+        "DataApiStatementIDs": "recorded-in-attempt-evidence",
+        "RetryCount": 0,
+        "FailureStage": null
+      },
+      "ResultPath": "$.orchestration.warehouse_provider_evidence",
+      "Next": "PreparePipelineCompletion"
+    },
+    "PrepareWarehouseFailure": {
+      "Type": "Pass",
+      "Parameters": {
+        "Retryable": false,
+        "ProviderEvidence": {
+          "FailureStage": "LoadWarehouse",
+          "GlueJobRunID": null,
+          "LoadAttemptID.$": "States.Format('{}-warehouse', $$.Execution.Name)",
+          "PublicationFingerprint": "recorded-in-redshift-attempt-evidence-when-created",
+          "DataApiStatementIDs": "recorded-in-redshift-attempt-evidence-when-created",
+          "FailureCode.$": "$.orchestration.failure.Error",
+          "FailureMessage.$": "$.orchestration.failure.Cause",
+          "ExecutionID.$": "$$.Execution.Id",
+          "RetryCount": 2
+        }
+      },
+      "ResultPath": "$.orchestration.failure_evidence",
+      "Next": "RecordFailure"
     },
     "PrepareInitializeFailure": {"Type": "Pass", "Parameters": {"Retryable": false, "ProviderEvidence": {"FailureStage": "InitializeBatch", "GlueJobRunID": null, "FailureCode.$": "$.orchestration.failure.Error", "FailureMessage.$": "$.orchestration.failure.Cause", "ExecutionID.$": "$$.Execution.Id", "RetryCount": 0}}, "ResultPath": "$.orchestration.failure_evidence", "Next": "RecordFailure"},
     "PrepareContentionFailure": {"Type": "Pass", "Parameters": {"Retryable": true, "ProviderEvidence": {"FailureStage": "InitializeBatch", "GlueJobRunID": null, "FailureCode": "ORCHESTRATION_CONTENTION", "FailureMessage": "Execution claim is owned by another execution", "ExecutionID.$": "$$.Execution.Id", "RetryCount": 0}}, "ResultPath": "$.orchestration.failure_evidence", "Next": "RecordFailure"},

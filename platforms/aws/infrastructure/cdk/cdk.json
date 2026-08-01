@@ -8,6 +8,9 @@
     "glueWorkerType": "G.1X",
     "glueWorkerCount": 2,
     "glueTimeoutMinutes": 60,
-    "glueMaxConcurrency": 1
+    "glueMaxConcurrency": 1,
+    "redshiftBaseCapacity": 8,
+    "redshiftMaxCapacity": 16,
+    "redshiftMonthlyRpuHours": 40
   }
 }

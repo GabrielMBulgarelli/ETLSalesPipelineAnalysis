@@ -13,8 +13,9 @@ import { Asset } from "aws-cdk-lib/aws-s3-assets";
 import { Bucket } from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import { DataLakePrefixes } from "./storage-stack";
+import { WarehouseResources } from "./warehouse-stack";
 
-export type GlueJobKey = "processRaw" | "validateProcessed" | "buildCurated";
+export type GlueJobKey = "processRaw" | "validateProcessed" | "buildCurated" | "loadWarehouse";
 
 export interface GlueRuntimeSettings {
   readonly workerType: string;
@@ -32,12 +33,14 @@ export interface DeploymentAssetPaths {
   readonly curatedContract: string;
   readonly qualityContract: string;
   readonly referenceContract: string;
+  readonly redshiftPolicy: string;
 }
 
 export interface GlueJobResources {
   readonly processRaw: CfnJob;
   readonly validateProcessed: CfnJob;
   readonly buildCurated: CfnJob;
+  readonly loadWarehouse: CfnJob;
 }
 
 export interface ProcessingStackProps extends StackProps {
@@ -46,6 +49,7 @@ export interface ProcessingStackProps extends StackProps {
   readonly prefixes: DataLakePrefixes;
   readonly runtime: GlueRuntimeSettings;
   readonly assets: DeploymentAssetPaths;
+  readonly warehouse: WarehouseResources;
   readonly permissionsBoundaryArn?: string;
 }
 
@@ -55,6 +59,7 @@ interface JobSpecification {
   readonly jobName: string;
   readonly logGroupPrefix: string;
   readonly dataPrefixes: string[];
+  readonly writablePrefixes: string[];
   readonly mutablePrefixes: string[];
   readonly extraFiles: Array<{ readonly path: string; readonly argument: string }>;
 }
@@ -86,6 +91,7 @@ export class ProcessingStack extends Stack {
       processRaw: new Asset(this, "ProcessRawScriptAsset", { path: props.assets.entrypoints.processRaw }),
       validateProcessed: new Asset(this, "ValidateProcessedScriptAsset", { path: props.assets.entrypoints.validateProcessed }),
       buildCurated: new Asset(this, "BuildCuratedScriptAsset", { path: props.assets.entrypoints.buildCurated }),
+      loadWarehouse: new Asset(this, "LoadWarehouseScriptAsset", { path: props.assets.entrypoints.loadWarehouse }),
     };
     const fileAssets = new Map<string, Asset>();
     for (const assetPath of [
@@ -95,6 +101,7 @@ export class ProcessingStack extends Stack {
       props.assets.curatedContract,
       props.assets.qualityContract,
       props.assets.referenceContract,
+      props.assets.redshiftPolicy,
     ]) {
       fileAssets.set(assetPath, new Asset(this, `FileAsset${fileAssets.size + 1}`, { path: assetPath }));
     }
@@ -113,6 +120,7 @@ export class ProcessingStack extends Stack {
         logGroupPrefix: `/aws-glue/jobs/ecommerce-sales-${props.environmentName}/process-raw`,
         dataPrefixes: [props.prefixes.raw, props.prefixes.processed, props.prefixes.rejected, ...sharedPrefixes],
         mutablePrefixes: [props.prefixes.processed, props.prefixes.rejected, props.prefixes.staging],
+        writablePrefixes: [props.prefixes.raw, props.prefixes.processed, props.prefixes.rejected, ...sharedPrefixes],
         extraFiles: [
           { path: props.assets.cloudConfig, argument: "--config" },
           { path: props.assets.rawContract, argument: "--raw-contract" },
@@ -126,6 +134,7 @@ export class ProcessingStack extends Stack {
         logGroupPrefix: `/aws-glue/jobs/ecommerce-sales-${props.environmentName}/validate-processed`,
         dataPrefixes: [props.prefixes.processed, props.prefixes.rejected, ...sharedPrefixes],
         mutablePrefixes: [props.prefixes.rejected, props.prefixes.staging],
+        writablePrefixes: [props.prefixes.processed, props.prefixes.rejected, ...sharedPrefixes],
         extraFiles: [
           { path: props.assets.cloudConfig, argument: "--config" },
           { path: props.assets.rawContract, argument: "--raw-contract" },
@@ -141,11 +150,31 @@ export class ProcessingStack extends Stack {
         logGroupPrefix: `/aws-glue/jobs/ecommerce-sales-${props.environmentName}/build-curated`,
         dataPrefixes: [props.prefixes.processed, props.prefixes.curated, props.prefixes.rejected, ...sharedPrefixes],
         mutablePrefixes: [props.prefixes.curated, props.prefixes.rejected, props.prefixes.staging],
+        writablePrefixes: [props.prefixes.processed, props.prefixes.curated, props.prefixes.rejected, ...sharedPrefixes],
         extraFiles: [
           { path: props.assets.cloudConfig, argument: "--config" },
           { path: props.assets.rawContract, argument: "--raw-contract" },
           { path: props.assets.processedContract, argument: "--processed-contract" },
           { path: props.assets.curatedContract, argument: "--curated-contract" },
+        ],
+      },
+      {
+        key: "loadWarehouse",
+        constructId: "LoadWarehouse",
+        jobName: `ecommerce-sales-${props.environmentName}-load-redshift-warehouse`,
+        logGroupPrefix: `/aws-glue/jobs/ecommerce-sales-${props.environmentName}/load-redshift-warehouse`,
+        dataPrefixes: [props.prefixes.curated, props.prefixes.quality, props.prefixes.staging, props.prefixes.audit],
+        writablePrefixes: [
+          `${props.prefixes.staging}warehouse/redshift/`,
+          `${props.prefixes.audit}warehouse/redshift/`,
+        ],
+        mutablePrefixes: [`${props.prefixes.staging}warehouse/redshift/`],
+        extraFiles: [
+          { path: props.assets.cloudConfig, argument: "--config" },
+          { path: props.assets.rawContract, argument: "--raw-contract" },
+          { path: props.assets.processedContract, argument: "--processed-contract" },
+          { path: props.assets.curatedContract, argument: "--curated-contract" },
+          { path: props.assets.redshiftPolicy, argument: "--redshift-policy" },
         ],
       },
     ];
@@ -169,7 +198,14 @@ export class ProcessingStack extends Stack {
         "--custom-logGroup-prefix": specification.logGroupPrefix,
         "--extra-py-files": packageAsset.s3ObjectUrl,
         "--extra-files": extraFileUrls.join(","),
-        "--customer-driver-env-vars": `CUSTOMER_AWS_ETL_BUCKET=${props.dataLakeBucket.bucketName}`,
+        "--customer-driver-env-vars": specification.key === "loadWarehouse"
+          ? [
+            `CUSTOMER_AWS_ETL_BUCKET=${props.dataLakeBucket.bucketName}`,
+            `CUSTOMER_REDSHIFT_WORKGROUP=${props.warehouse.workgroupName}`,
+            `CUSTOMER_REDSHIFT_DATABASE=${props.warehouse.databaseName}`,
+            `CUSTOMER_REDSHIFT_COPY_ROLE_ARN=${props.warehouse.copyRoleArn}`,
+          ].join(",")
+          : `CUSTOMER_AWS_ETL_BUCKET=${props.dataLakeBucket.bucketName}`,
       };
       for (const extraFile of specification.extraFiles) {
         const asset = fileAssets.get(extraFile.path);
@@ -190,7 +226,7 @@ export class ProcessingStack extends Stack {
           scriptLocation: scriptAssets[specification.key].s3ObjectUrl,
         },
         defaultArguments,
-        executionProperty: { maxConcurrentRuns: props.runtime.maxConcurrency },
+        executionProperty: { maxConcurrentRuns: specification.key === "loadWarehouse" ? 1 : props.runtime.maxConcurrency },
         maxRetries: 0,
         numberOfWorkers: props.runtime.workerCount,
         timeout: props.runtime.timeoutMinutes,
@@ -235,13 +271,13 @@ export class ProcessingStack extends Stack {
     }));
     role.addToPolicy(new PolicyStatement({
       effect: Effect.ALLOW,
-      actions: [
-        "s3:GetObject",
-        "s3:PutObject",
-        "s3:AbortMultipartUpload",
-        "s3:ListMultipartUploadParts",
-      ],
+      actions: ["s3:GetObject"],
       resources: specification.dataPrefixes.map((prefix) => props.dataLakeBucket.arnForObjects(`${prefix}*`)),
+    }));
+    role.addToPolicy(new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: ["s3:PutObject", "s3:AbortMultipartUpload", "s3:ListMultipartUploadParts"],
+      resources: specification.writablePrefixes.map((prefix) => props.dataLakeBucket.arnForObjects(`${prefix}*`)),
     }));
     role.addToPolicy(new PolicyStatement({
       effect: Effect.ALLOW,
@@ -275,6 +311,24 @@ export class ProcessingStack extends Stack {
         throw new Error(`missing file asset grant for ${extraFile.path}`);
       }
       asset.grantRead(role);
+    }
+    if (specification.key === "loadWarehouse") {
+      role.addToPolicy(new PolicyStatement({
+        effect: Effect.ALLOW,
+        actions: [
+          "redshift-data:ExecuteStatement",
+          "redshift-data:BatchExecuteStatement",
+          "redshift-data:DescribeStatement",
+          "redshift-data:GetStatementResult",
+          "redshift-data:CancelStatement",
+        ],
+        resources: [props.warehouse.workgroupArn],
+      }));
+      role.addToPolicy(new PolicyStatement({
+        effect: Effect.ALLOW,
+        actions: ["redshift-serverless:GetCredentials"],
+        resources: [props.warehouse.workgroupArn],
+      }));
     }
     return role;
   }

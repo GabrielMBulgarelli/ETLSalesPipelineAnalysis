@@ -51,6 +51,7 @@ export class OrchestrationStack extends Stack {
       "${ProcessRawGlueJobName}",
       "${ValidateProcessedGlueJobName}",
       "${BuildCuratedGlueJobName}",
+      "${LoadWarehouseGlueJobName}",
     ];
     if (
       templateTokens.length !== expectedTemplateTokens.length
@@ -62,10 +63,11 @@ export class OrchestrationStack extends Stack {
       .replace("${...}", "the declared Glue job-name tokens")
       .replaceAll("${ProcessRawGlueJobName}", props.jobs.processRaw.ref)
       .replaceAll("${ValidateProcessedGlueJobName}", props.jobs.validateProcessed.ref)
-      .replaceAll("${BuildCuratedGlueJobName}", props.jobs.buildCurated.ref);
+      .replaceAll("${BuildCuratedGlueJobName}", props.jobs.buildCurated.ref)
+      .replaceAll("${LoadWarehouseGlueJobName}", props.jobs.loadWarehouse.ref);
     const parsedDefinition = JSON.parse(definition) as { readonly States?: Record<string, unknown> };
-    if (Object.keys(parsedDefinition.States ?? {}).length !== 29) {
-      throw new Error("the committed orchestration definition must contain exactly 29 top-level states");
+    if (Object.keys(parsedDefinition.States ?? {}).length !== 32) {
+      throw new Error("the Phase 10 orchestration definition must contain exactly 32 top-level states");
     }
 
     this.stateMachineLogGroup = new LogGroup(this, "StateMachineLogGroup", {

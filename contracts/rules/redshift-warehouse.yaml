@@ -1,0 +1,102 @@
+contract_version: 1
+policy_id: redshift-scd2-v1
+rules:
+  - id: warehouse_publication_identity
+    severity: fail-batch
+  - id: scd2_history_integrity
+    severity: fail-batch
+  - id: temporal_fact_resolution
+    severity: fail-batch
+publication_identity:
+  ordered_datasets:
+    - dim_customer
+    - dim_product
+    - dim_seller
+    - dim_geography
+    - dim_date
+    - dim_order_status
+    - fact_sales
+    - fact_reviews
+    - sales_by_state
+    - sales_by_category
+    - monthly_sales
+    - order_status
+    - cross_state_analysis
+    - seller_performance
+    - size_analysis
+    - payment_methods
+  fields:
+    - BatchID
+    - ContractVersion
+    - PipelineVersion
+    - CurationMarkerSHA256
+    - OrderedDatasetHashesAndRowCounts
+    - WarehousePolicyID
+  excluded_attempt_fields:
+    - ExecutionID
+    - GlueJobRunID
+    - RedshiftStatementID
+    - LoadAttemptID
+history:
+  effective_field: WarehouseEffectiveAt
+  expiration_field: WarehouseExpirationAt
+  interval: half-open
+  initial_effective_at: "1900-01-01T00:00:00Z"
+  later_effective_source: immutable-manifest-batch_timestamp
+  meaning: warehouse-observed-not-source-business-effective
+  null_expiration: infinity
+  absent_business_key: preserve-existing-history
+  duplicate_incoming_business_key: deterministic-failure
+  same_timestamp_same_tracked_hash: no-op
+  same_timestamp_different_tracked_hash: deterministic-conflict
+  late_arrival: split-covering-warehouse-observed-interval
+  unresolved_fact_relationship: deterministic-failure
+  multiple_fact_relationships: deterministic-failure
+  dimensions:
+    dim_customer:
+      business_key: [CustomerID]
+      tracked_attributes: [CustomerUniqueID, CustomerZipCodePrefix, CustomerCity, CustomerState]
+      customer_semantics: >-
+        Olist CustomerID is an order-scoped customer record. History tracks corrections and
+        changes to that committed record across batches; it is not person-level history for
+        every order sharing CustomerUniqueID. A CustomerUniqueID dimension would require a
+        separate grain, ordering, and duplicate-resolution design.
+    dim_product:
+      business_key: [ProductID]
+      tracked_attributes: [ProductCategoryName, ProductCategoryNameEnglish, ProductWeightG,
+        ProductLengthCm, ProductHeightCm, ProductWidthCm, ProductVolumeCm3, SizeCategory]
+    dim_seller:
+      business_key: [SellerID]
+      tracked_attributes: [SellerZipCodePrefix, SellerCity, SellerState]
+    dim_geography:
+      business_key: [ZipCodePrefix]
+      tracked_attributes: [City, State, Latitude, Longitude, Region]
+  static_dimensions: [dim_date, dim_order_status]
+tracked_hash:
+  algorithm: sha256
+  serialization: canonical-json
+  field_order: tracked_attributes-in-declared-order
+  preserves_curated_record_hash: true
+  excludes: [RecordHash, SourceBatchID, LoadAttemptID, load_timestamps,
+    publication_fields, surrogate_keys, WarehouseEffectiveAt, WarehouseExpirationAt]
+facts:
+  fact_sales:
+    grain: [OrderID, OrderItemID]
+    event_timestamp: OrderPurchaseTimestamp
+    historical_relationships:
+      CustomerKey: [dim_customer, CustomerID]
+      ProductKey: [dim_product, ProductID]
+      SellerKey: [dim_seller, SellerID]
+      CustomerGeographyKey: [dim_geography, ZipCodePrefix]
+      SellerGeographyKey: [dim_geography, seller-zip-via-resolved-seller-version]
+    exact_relationships:
+      DateSurrogateKey: [dim_date, DateKey]
+      OrderStatusKey: [dim_order_status, StatusID]
+  fact_reviews:
+    grain: [OrderID, ReviewID]
+    event_timestamp: ReviewCreationDate
+    historical_relationships:
+      CustomerKey: [dim_customer, CustomerID]
+    exact_relationships:
+      DateSurrogateKey: [dim_date, DateKey]
+    forbidden_relationships: [product, seller, geography, payment, order_status]

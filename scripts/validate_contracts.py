@@ -63,6 +63,7 @@ RULE_FILES = {
     "fact-grains",
     "incremental-processing",
     "quality-thresholds",
+    "redshift-warehouse",
     "referential-integrity",
     "scd2",
 }

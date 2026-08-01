@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import os
 import sys
 
 from aws_etl.job_context import build_context, parse_args
@@ -18,6 +17,7 @@ def main() -> int:
     context = build_context(args)
     try:
         contract = load_contract(args.curated_contract, "curated")
+        import os
         run_warehouse(context, contract, mode=os.environ.get("AWS_ETL_WAREHOUSE_MODE", "load"))
         return 0
     finally:

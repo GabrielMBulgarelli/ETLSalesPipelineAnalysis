@@ -8,6 +8,7 @@ import { ObservabilityStack } from "../lib/observability-stack";
 import { OrchestrationStack } from "../lib/orchestration-stack";
 import { DeploymentAssetPaths, GlueRuntimeSettings, ProcessingStack } from "../lib/processing-stack";
 import { StorageStack } from "../lib/storage-stack";
+import { WarehouseStack } from "../lib/warehouse-stack";
 
 const ALLOWED_ENVIRONMENTS = new Set(["dev", "staging", "prod"]);
 const ALLOWED_WORKER_TYPES = new Set([
@@ -67,6 +68,7 @@ function writeDeploymentAssets(
     curatedContract: "contracts/schemas/curated/datasets.yaml",
     qualityContract: "contracts/rules/quality-thresholds.yaml",
     referenceContract: "contracts/rules/referential-integrity.yaml",
+    redshiftPolicy: "contracts/rules/redshift-warehouse.yaml",
   } as const;
   const generatedContracts = {} as Record<keyof typeof contractSources, string>;
   for (const [key, relativeSource] of Object.entries(contractSources) as Array<
@@ -83,6 +85,7 @@ function writeDeploymentAssets(
       processRaw: path.join(repositoryRoot, "platforms/aws/entrypoints/glue-jobs/process_raw.py"),
       validateProcessed: path.join(repositoryRoot, "platforms/aws/entrypoints/glue-jobs/validate_processed.py"),
       buildCurated: path.join(repositoryRoot, "platforms/aws/entrypoints/glue-jobs/build_curated.py"),
+      loadWarehouse: path.join(repositoryRoot, "platforms/aws/entrypoints/glue-jobs/load_redshift_warehouse.py"),
     },
     cloudConfig,
     ...generatedContracts,
@@ -119,6 +122,9 @@ const repositoryRoot = path.resolve(cdkRoot, "../../../..");
 const stackEnvironment = { account: process.env.CDK_DEFAULT_ACCOUNT, region };
 const stackName = (component: string): string => `EcommerceSales-${environmentName}-${component}`;
 const commonProps = { env: stackEnvironment };
+const redshiftBaseCapacity = contextInteger(app, "redshiftBaseCapacity", 8, 8);
+const redshiftMaxCapacity = contextInteger(app, "redshiftMaxCapacity", 16, 16);
+const redshiftMonthlyRpuHours = contextInteger(app, "redshiftMonthlyRpuHours", 40, 40);
 
 const storage = new StorageStack(app, stackName("Storage"), {
   ...commonProps,
@@ -131,6 +137,17 @@ const catalog = new CatalogStack(app, stackName("Catalog"), {
 });
 catalog.addStackDependency(storage);
 
+const warehouse = new WarehouseStack(app, stackName("Warehouse"), {
+  ...commonProps,
+  environmentName,
+  dataLakeBucket: storage.dataLakeBucket,
+  prefixes: storage.prefixes,
+  baseCapacity: redshiftBaseCapacity,
+  maxCapacity: redshiftMaxCapacity,
+  monthlyRpuHours: redshiftMonthlyRpuHours,
+});
+warehouse.addStackDependency(storage);
+
 const processing = new ProcessingStack(app, stackName("Processing"), {
   ...commonProps,
   environmentName,
@@ -138,10 +155,12 @@ const processing = new ProcessingStack(app, stackName("Processing"), {
   prefixes: storage.prefixes,
   runtime,
   assets: writeDeploymentAssets(repositoryRoot, cdkRoot, environmentName, region),
+  warehouse: warehouse.warehouse,
   permissionsBoundaryArn,
 });
 processing.addStackDependency(storage);
 processing.addStackDependency(catalog);
+processing.addStackDependency(warehouse);
 
 const orchestration = new OrchestrationStack(app, stackName("Orchestration"), {
   ...commonProps,
