@@ -3,6 +3,7 @@
 *.pem
 *.env
 *.sh
+!platforms/aws/runtime/local/postgres.sh
 *.puml
 
 # Notebook output

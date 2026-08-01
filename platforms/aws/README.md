@@ -1,4 +1,4 @@
-# AWS-local raw-to-curated pipeline
+# AWS-local raw-to-curated pipeline and PostgreSQL warehouse
 
 Phases 3 through 7 provide a local S3-compatible ingestion and AWS Glue 5 path from the nine Olist source files through validated processed data, curated dimensions and facts, eight aggregates, explicit curated catalog metadata, and a Step Functions orchestration definition. LocalStack and the Glue container do not validate managed AWS IAM, networking, scaling, durability, or managed Step Functions execution behavior.
 
@@ -19,6 +19,8 @@ python3 -m pip install -e platforms/aws
 ```
 
 The complete Olist dataset stays outside Git. Do not copy it into this repository.
+
+Copy the explicitly local dummy credentials from the root `.env.example` into an ignored `.env`, or export equivalent values. PostgreSQL passwords are never embedded in SQL or committed runtime configuration.
 
 ## Synthesize the managed AWS infrastructure
 
@@ -70,6 +72,28 @@ make aws-local-down
 ```
 
 `aws-local-run` is the authoritative local orchestration path. It initializes the nested batch/storage/submissions/orchestration envelope, classifies each of the nine dataset submissions, acquires an immutable execution claim, and runs processing, validation, and curation synchronously in that order. A matching completed replay records a no-op without starting Glue. A partial run resumes at the first incomplete stage only when every earlier immutable marker matches the batch, all manifested content hashes, contract and pipeline versions, and every expected Parquet output. A marker/output mismatch fails deterministically and is never overwritten.
+
+## Load the local PostgreSQL warehouse
+
+Phase 9 adds PostgreSQL 16.14 on Debian Bookworm, pinned by immutable image-list digest and constrained to `linux/amd64`. The local database is `ecommerce_sales`; the `ecommerce_admin` bootstrap owner applies migrations, while Spark connects only as the non-superuser `ecommerce_etl` role. Schemas are `staging`, `warehouse`, `analytics`, and `audit`. Host access is limited to `127.0.0.1:${POSTGRES_PORT:-54329}`. Containers use `postgres:5432` on the Compose network.
+
+```bash
+make aws-postgres-up
+make aws-postgres-load BATCH_ID=my-batch
+make aws-postgres-validate BATCH_ID=my-batch
+make aws-postgres-status
+make aws-postgres-down
+```
+
+`aws-local-warehouse` is a compatibility alias for `aws-postgres-load`. The existing raw-to-curated pipeline remains PostgreSQL-independent. To opt in after a successful local curation, run `make aws-local-run ... WAREHOUSE=1`; warehouse evidence remains separate from source replay, Glue validation, curation, and terminal pipeline evidence.
+
+The pinned Glue container writes all 16 curated datasets through Spark JDBC into attempt-isolated, `UNLOGGED` staging tables. These separate JDBC writes are not represented as one transaction. After complete staged schema, nullability, count, grain, relationship, `RecordHash`, representative-payment, and aggregate validation, one PostgreSQL connection begins the publication transaction and takes `pg_advisory_xact_lock`. It synchronizes six dimensions by business identifier without reallocating existing identity keys, replaces both fact snapshots and eight physical aggregate snapshots, removes dimensions absent from the incoming snapshot only after facts are rebuilt, and commits the completed registry and event with the data once. A publication error rolls the entire transaction back; its immutable failure event is committed separately before any attempt-scoped cleanup.
+
+Publication equality is a canonical lowercase SHA-256 over BatchID, contract and pipeline versions, the exact curation-marker digest, and the ordered names, row counts, and curated object hashes of all 16 datasets. The load-attempt identity is deliberately excluded. A completed matching replay records an immutable no-op; a different fingerprint for an already completed BatchID records a conflict and fails. Failed attempts never create completed-publication entries, and rejected rows are not loaded.
+
+The warehouse is a single current snapshot, not SCD Type 2. Dimension surrogate keys use PostgreSQL identity columns and remain stable for business identifiers already encountered; contracted business IDs and `RecordHash` remain present. Reviews retain their order/review grain without product attribution. `payment_methods` remains representative-payment item-price attribution and contains no `payment_value` allocation.
+
+`make aws-postgres-down` retains PostgreSQL development evidence. `make aws-postgres-clean` is the explicit destructive cleanup command for the PostgreSQL container and named volume. Phase 10 will translate the logical model to Redshift-native DDL and load behavior; PostgreSQL identity columns, advisory locks, triggers, and transaction SQL are not intended to be copied verbatim.
 
 The authoritative AWS state machine template is [`orchestration/pipeline.asl.json`](orchestration/pipeline.asl.json). It contains the deployment tokens `${ProcessRawGlueJobName}`, `${ValidateProcessedGlueJobName}`, and `${BuildCuratedGlueJobName}`; Phase 8 must resolve all three before deployment. The Glue tasks retry only `ConcurrentRunsExceededException`, `InternalServiceException`, and `OperationTimeoutException`, with a 5-second initial interval, 2.0 backoff, and two retry attempts. Deterministic validation, missing-job, invalid-input, access, `reject-dataset`, and `fail-batch` outcomes are not retried.
 
@@ -137,7 +161,7 @@ The job first writes and verifies every dataset under a batch-specific staging p
 
 Phase 5 publishes `validation-summary.json` last after deterministic validation and `curation-summary.json` last after every curated output has been staged, schema/grain/count checked, and published. Validation permits curation only for `PASSED` and `PASSED_WITH_REJECTIONS`; deterministic `FAILED` results are immutable and reusable, while transient failures publish no terminal marker. A replay is a no-op only when its marker identity and every declared output agree; mismatches fail clearly.
 
-Curated dimensions are snapshots and retain their business identifiers. Facts retain business identifiers at `(OrderID, OrderItemID)` and `(OrderID, ReviewID)` grains; no warehouse surrogate keys are assigned. Each dimension and fact has a lowercase SHA-256 `RecordHash` over canonical JSON in contract field order, preserving nulls and normalizing decimals and timestamps as specified by the curated contract. This is a full-record fingerprint, not an SCD Type 2 tracked-attribute hash.
+Curated dimensions are snapshots and retain their business identifiers. Facts retain business identifiers at `(OrderID, OrderItemID)` and `(OrderID, ReviewID)` grains. The curated datasets themselves contain no surrogate keys; the local PostgreSQL warehouse assigns stable identity keys to dimension business identifiers and resolves fact references during publication. Each dimension and fact has a lowercase SHA-256 `RecordHash` over canonical JSON in contract field order, preserving nulls and normalizing decimals and timestamps as specified by the curated contract. This is a full-record fingerprint, not an SCD Type 2 tracked-attribute hash.
 
 The `payment_methods` aggregate groups item `Price` by the representative payment type, selected as the first payment ordered by `(payment_sequential, payment_type)`. It is descriptive item-price attribution, not tendered-payment totals; `payment_value` is neither allocated nor aggregated into `fact_sales` or this aggregate.
 

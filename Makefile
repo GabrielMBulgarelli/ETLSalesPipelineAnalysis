@@ -1,5 +1,6 @@
 .PHONY: baseline-test contract-test phase-2-test baseline-validate contract-validate catalog-generate catalog-validate phase-2-validate \
 	aws-local-up aws-local-seed aws-local-process aws-local-validate aws-local-curate aws-local-run aws-local-status aws-local-down \
+	aws-postgres-up aws-postgres-load aws-postgres-validate aws-postgres-status aws-postgres-down aws-postgres-clean aws-local-warehouse \
 	aws-state-machine-validate aws-cdk-install aws-cdk-build aws-cdk-synth aws-execution-name
 
 AWS_LOCAL_DIR := platforms/aws/runtime/local
@@ -70,6 +71,7 @@ aws-local-curate:
 aws-local-run:
 	@test -n "$(DATASET_DIR)" || { echo "DATASET_DIR is required (for example: make aws-local-run DATASET_DIR=/path/to/olist)" >&2; exit 2; }
 	PYTHONPATH=$(AWS_PYTHONPATH) DATASET_DIR="$(DATASET_DIR)" BATCH_ID="$(BATCH_ID)" BATCH_TIMESTAMP="$(BATCH_TIMESTAMP)" EXECUTION_ID="$(EXECUTION_ID)" \
+		WAREHOUSE="$(WAREHOUSE)" \
 		python3 $(AWS_LOCAL_DIR)/pipeline_runner.py --config $(AWS_LOCAL_DIR)/config.yaml
 
 aws-local-status:
@@ -78,3 +80,25 @@ aws-local-status:
 
 aws-local-down:
 	docker compose -f $(AWS_LOCAL_DIR)/docker-compose.yml down
+
+aws-postgres-up:
+	bash $(AWS_LOCAL_DIR)/postgres.sh up
+
+aws-postgres-load:
+	@test -n "$(BATCH_ID)" || { echo "BATCH_ID is required" >&2; exit 2; }
+	BATCH_ID="$(BATCH_ID)" GLUE_JOB=load_warehouse AWS_ETL_WAREHOUSE_MODE=load bash $(AWS_LOCAL_DIR)/run_glue_job.sh
+
+aws-postgres-validate:
+	@test -n "$(BATCH_ID)" || { echo "BATCH_ID is required" >&2; exit 2; }
+	BATCH_ID="$(BATCH_ID)" GLUE_JOB=load_warehouse AWS_ETL_WAREHOUSE_MODE=validate bash $(AWS_LOCAL_DIR)/run_glue_job.sh
+
+aws-postgres-status:
+	bash $(AWS_LOCAL_DIR)/postgres.sh status
+
+aws-postgres-down:
+	bash $(AWS_LOCAL_DIR)/postgres.sh down
+
+aws-postgres-clean:
+	bash $(AWS_LOCAL_DIR)/postgres.sh clean
+
+aws-local-warehouse: aws-postgres-load

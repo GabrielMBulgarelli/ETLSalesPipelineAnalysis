@@ -274,6 +274,16 @@ def run_local_glue(stage: str, batch_id: str, client: Any, config: AwsEtlConfig)
     return job_run_id
 
 
+def run_local_warehouse(batch_id: str) -> None:
+    result = subprocess.run(
+        ["bash", str(RUN_GLUE)], cwd=ROOT,
+        env={**os.environ, "BATCH_ID": batch_id, "GLUE_JOB": "load_warehouse", "AWS_ETL_WAREHOUSE_MODE": "load"},
+        check=False,
+    )
+    if result.returncode:
+        raise SystemExit(result.returncode)
+
+
 def _provider(exc: BaseException, execution_id: str, retry_count: int = 0) -> dict[str, Any]:
     evidence = {
         "FailureStage": getattr(exc, "stage", "InitializeBatch"),
@@ -351,6 +361,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--batch-timestamp")
     parser.add_argument("--execution-id")
     parser.add_argument("--self-check", action="store_true")
+    parser.add_argument("--load-warehouse", action="store_true")
     return parser.parse_args()
 
 
@@ -377,6 +388,8 @@ def main() -> int:
         if envelope["orchestration"]["replay_class"] == "NO_OP":
             record_terminal(client, config, envelope)
             print(f"Batch {batch_id}: completed replay is a no-op")
+            if args.load_warehouse or os.environ.get("WAREHOUSE") == "1":
+                run_local_warehouse(batch_id)
             return 0
         stage = next_stage(client, config, envelope)
         envelope["orchestration"]["next_stage"] = stage
@@ -398,6 +411,8 @@ def main() -> int:
                     raise DeterministicPipelineFailure(current, "QUALITY_FAILED", "validation did not publish a passing completion marker", job_run_id)
         record_terminal(client, config, envelope)
         print(f"Batch {batch_id}: pipeline completed ({len(envelope['submissions'])} submissions)")
+        if args.load_warehouse or os.environ.get("WAREHOUSE") == "1":
+            run_local_warehouse(batch_id)
         return 0
     except RuntimeError as exc:
         if not claim_acquired and "immutable evidence conflict" in str(exc) and not isinstance(exc, (DeterministicPipelineFailure, GlueExecutionFailure)):
