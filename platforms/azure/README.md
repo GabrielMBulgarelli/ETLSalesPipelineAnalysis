@@ -61,7 +61,7 @@ The project implements a comprehensive star schema design for analytics optimiza
 
 The dimensional model diagram illustrates how the sales fact connects to customer, product, seller, geography, date, and order-status dimensions. The sales fact has one row per order item. The review fact has one row per order and review pair, keyed by (OrderID, ReviewID), with no product attribution.
 
-The Azure baseline is a full-refresh snapshot. The dimension audit columns do not currently implement change detection or historical SCD Type 2 behavior. See [the baseline audit](../../platforms/azure/baseline.md) for the verified contracts and remaining limitations.
+The Azure baseline is a full-refresh snapshot. The dimension audit columns do not currently implement change detection or historical SCD Type 2 behavior. See the [Azure baseline](baseline.md) for reproduction commands, verified contracts, loading order, and current limitations.
 
 ## Aggregation Tables
 

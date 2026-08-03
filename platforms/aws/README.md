@@ -143,7 +143,7 @@ The local Python runner mirrors the workflow decisions. Build an execution-safe 
 
 ## <span style="font-size: 24px;">Analysis</span>
 
-The eight curated aggregates expose the following analytical views. Detailed sample evidence is recorded in [AWS project evidence](../../platforms/aws/validation-evidence.md).
+The eight curated aggregates expose the following analytical views. Detailed sample results are recorded in [AWS implementation and validation evidence](validation-evidence.md).
 
 ### <span style="font-size: 20px;">Analysis #1: Geographic Sales Distribution</span>
 
@@ -208,7 +208,7 @@ The warehouse contains six dimensions:
   </tr>
 </table>
 
-Four business dimensions use Redshift SCD2 history. The SQL, publication procedure, IAM boundary, recovery rules, and deterministic evidence are documented in the [Redshift Serverless warehouse design](../../platforms/aws/warehouse-design.md).
+Four business dimensions use Redshift SCD2 history. The SQL, publication procedure, IAM boundary, recovery rules, and deterministic evidence are documented in the [Redshift Serverless warehouse design](warehouse-design.md).
 
 ## <span style="font-size: 24px;">Fact Tables</span>
 
@@ -235,7 +235,7 @@ Run the credential-free final gate with:
 make project-validate
 ```
 
-It compiles Python, checks baseline contracts and all 16 Catalog definitions, validates the 32-state workflow and replay logic, inspects Redshift SQL, runs SCD2/publication/recovery simulations, compiles TypeScript, synthesizes six CDK stacks, and checks links, secrets, and tracked-file hygiene. The evidence boundary distinguishes locally executed behavior, deterministic checks, and synthesized infrastructure; it does not claim managed execution, measured cost, or empirical Redshift performance.
+It runs Python compilation; baseline and contract validation; catalog validation; Step Functions and replay checks; Redshift SQL and warehouse simulations; the TypeScript build; and CDK synthesis. The evidence boundary distinguishes locally executed behavior, deterministic checks, and synthesized infrastructure; it does not claim managed execution, measured cost, or empirical Redshift performance.
 
 ## Future Enhancements
 

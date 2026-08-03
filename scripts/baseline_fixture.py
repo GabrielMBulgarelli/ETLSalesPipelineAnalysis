@@ -1,4 +1,4 @@
-"""Deterministic executable specification for the corrected Azure baseline.
+"""Executable specification for the deterministic Azure baseline.
 
 This standard-library runner is intentionally limited to the deterministic baseline fixture. It
 does not replace the Synapse/PySpark implementation; it makes the baseline
@@ -225,7 +225,7 @@ def _build_aggregations(
 
 
 def build_baseline_snapshot(raw_directory: Path, batch_timestamp: str = BATCH_TIMESTAMP) -> dict:
-    """Build the deterministic baseline logical snapshot from the deterministic raw fixture."""
+    """Build the logical snapshot from the deterministic raw fixture."""
     raw_directory = Path(raw_directory)
     raw = {}
     processed = {}

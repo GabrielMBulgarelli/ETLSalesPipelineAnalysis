@@ -66,7 +66,7 @@ Both implementations target the same logical specification, but full operational
 
 ## Validation status
 
-The AWS pipeline and PostgreSQL publication path were executed locally with LocalStack and the Glue 5 container. Replay, SCD2, publication, recovery, contracts, metadata, orchestration, and warehouse SQL were validated deterministically, and six AWS CDK stacks were synthesized without deploying managed AWS resources. The Azure guide preserves its Synapse implementation and verified baseline audit. A same-input, end-to-end comparison of both managed pipelines remains outstanding.
+The AWS pipeline and PostgreSQL publication path were executed locally with LocalStack and the Glue 5 container. Replay, SCD2, publication, recovery, contracts, metadata, orchestration, and warehouse SQL were validated deterministically, and six AWS CDK stacks were synthesized without deploying managed AWS resources. The Azure guide preserves its Synapse implementation and deterministic baseline validation. A same-input, end-to-end comparison of both managed pipelines remains outstanding.
 
 Detailed commands, evidence, limitations, security controls, observability, and future work remain in the [AWS guide](platforms/aws/README.md) and [Azure guide](platforms/azure/README.md).
 
@@ -78,5 +78,5 @@ platforms/aws/     AWS pipeline, warehouse, infrastructure, and guide
 platforms/azure/   Azure pipeline, warehouse, artifacts, and guide
 scripts/           Contract, metadata, orchestration, and warehouse validation tools
 tests/             Data contract and fixture behavior tests
-docs/              Architecture, evidence, audits, and decisions
+docs/              Shared contract decisions and architecture assets
 ```

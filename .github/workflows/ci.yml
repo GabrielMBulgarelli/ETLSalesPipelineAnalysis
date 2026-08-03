@@ -29,7 +29,7 @@ jobs:
         run: npm ci --prefix platforms/aws/cdk-infrastructure
       - name: Run credential-free project gate
         run: make project-validate
-      - name: Verify repository diff and tracked-file hygiene
+      - name: Verify validation generated no tracked changes
         run: |
           git diff --check
           test -z "$(git status --porcelain --untracked-files=no)"
