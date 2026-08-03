@@ -5,8 +5,8 @@ from pathlib import Path
 from scripts.baseline_fixture import BATCH_TIMESTAMP, build_baseline_snapshot
 
 
-ROOT = Path(__file__).resolve().parents[2]
-RAW = ROOT / "contracts" / "fixtures" / "baseline" / "raw"
+ROOT = Path(__file__).resolve().parents[1]
+RAW = ROOT / "contracts" / "fixtures"
 EXPECTED = ROOT / "contracts" / "expected" / "baseline_snapshot.json"
 
 

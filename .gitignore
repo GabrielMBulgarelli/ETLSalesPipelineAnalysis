@@ -9,7 +9,7 @@
 
 # Notebook output
 .ipynb_checkpoints/
-platforms/azure/artifacts/historical/parquets
+platforms/azure/historical-artifacts/parquets
 out/
 
 # Configuration with secrets
@@ -20,5 +20,5 @@ __pycache__/
 *.py[cod]
 
 # AWS CDK local dependencies and synthesized assets
-platforms/aws/infrastructure/cdk/node_modules/
-platforms/aws/infrastructure/cdk/cdk.out/
+platforms/aws/cdk-infrastructure/node_modules/
+platforms/aws/cdk-infrastructure/cdk.out/

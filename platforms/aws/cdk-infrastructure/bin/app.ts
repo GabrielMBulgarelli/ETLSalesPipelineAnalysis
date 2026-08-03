@@ -82,10 +82,10 @@ function writeDeploymentAssets(
   return {
     sourceDirectory: path.join(repositoryRoot, "platforms/aws/src"),
     entrypoints: {
-      processRaw: path.join(repositoryRoot, "platforms/aws/entrypoints/glue-jobs/process_raw.py"),
-      validateProcessed: path.join(repositoryRoot, "platforms/aws/entrypoints/glue-jobs/validate_processed.py"),
-      buildCurated: path.join(repositoryRoot, "platforms/aws/entrypoints/glue-jobs/build_curated.py"),
-      loadWarehouse: path.join(repositoryRoot, "platforms/aws/entrypoints/glue-jobs/load_redshift_warehouse.py"),
+      processRaw: path.join(repositoryRoot, "platforms/aws/glue-jobs/process_raw.py"),
+      validateProcessed: path.join(repositoryRoot, "platforms/aws/glue-jobs/validate_processed.py"),
+      buildCurated: path.join(repositoryRoot, "platforms/aws/glue-jobs/build_curated.py"),
+      loadWarehouse: path.join(repositoryRoot, "platforms/aws/glue-jobs/load_redshift_warehouse.py"),
     },
     cloudConfig,
     ...generatedContracts,
@@ -118,7 +118,7 @@ if (permissionsBoundaryArn !== undefined && !/^arn:[^:]+:iam::\d{12}:policy\/.+/
 }
 
 const cdkRoot = path.resolve(__dirname, "..");
-const repositoryRoot = path.resolve(cdkRoot, "../../../..");
+const repositoryRoot = path.resolve(cdkRoot, "../../..");
 const stackEnvironment = { account: process.env.CDK_DEFAULT_ACCOUNT, region };
 const stackName = (component: string): string => `EcommerceSales-${environmentName}-${component}`;
 const commonProps = { env: stackEnvironment };

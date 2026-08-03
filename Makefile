@@ -4,14 +4,14 @@
 	aws-state-machine-validate aws-redshift-sql-validate aws-redshift-warehouse-validate aws-cdk-install aws-cdk-build aws-cdk-synth aws-execution-name \
 	python-compile project-validate
 
-AWS_LOCAL_DIR := platforms/aws/runtime/local
+AWS_LOCAL_DIR := platforms/aws/local-runtime
 AWS_PYTHONPATH := platforms/aws/src
-AWS_CDK_DIR := platforms/aws/infrastructure/cdk
+AWS_CDK_DIR := platforms/aws/cdk-infrastructure
 include $(AWS_LOCAL_DIR)/glue.env
 export GLUE_IMAGE
 
 baseline-test:
-	python3 -m unittest discover -s platforms/azure/tests -v
+	python3 -m unittest discover -s tests -v
 	python3 -m unittest discover -s platforms/azure/tests -v
 	python3 scripts/baseline_fixture.py --check
 
@@ -48,7 +48,7 @@ aws-cdk-synth:
 	npm --prefix $(AWS_CDK_DIR) run synth
 
 python-compile:
-	python3 -m compileall -q platforms/aws/src platforms/aws/entrypoints/glue-jobs scripts
+	python3 -m compileall -q platforms/aws/src platforms/aws/glue-jobs scripts
 
 
 project-validate: python-compile baseline-validate contract-validate catalog-validate aws-state-machine-validate \

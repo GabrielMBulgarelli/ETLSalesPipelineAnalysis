@@ -22,11 +22,11 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: platforms/aws/infrastructure/cdk/package-lock.json
+          cache-dependency-path: platforms/aws/cdk-infrastructure/package-lock.json
       - name: Install validation dependencies
-        run: pip install -r requirements-dev.txt
+        run: pip install -r requirements-dev.txt -e platforms/aws
       - name: Install CDK dependencies
-        run: npm ci --prefix platforms/aws/infrastructure/cdk
+        run: npm ci --prefix platforms/aws/cdk-infrastructure
       - name: Run credential-free project gate
         run: make project-validate
       - name: Verify repository diff and tracked-file hygiene

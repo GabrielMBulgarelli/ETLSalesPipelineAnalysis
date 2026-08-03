@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPOSITORY_ROOT="$(cd "${SCRIPT_DIR}/../../../.." && pwd)"
+REPOSITORY_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 # shellcheck source=glue.env
 source "${SCRIPT_DIR}/glue.env"
 
@@ -36,9 +36,9 @@ docker run --rm \
   "${GLUE_IMAGE}" \
   -lc 'cp -a /home/hadoop/workspace/platforms/aws /tmp/aws-etl-package && python3 -m pip install --user --quiet /tmp/aws-etl-package && exec spark-submit "$@"' \
   glue-spark-submit \
-    "/home/hadoop/workspace/platforms/aws/entrypoints/glue-jobs/${GLUE_JOB}.py" \
+    "/home/hadoop/workspace/platforms/aws/glue-jobs/${GLUE_JOB}.py" \
     --batch-id "${BATCH_ID}" \
-    --config /home/hadoop/workspace/platforms/aws/runtime/local/config.yaml \
+    --config /home/hadoop/workspace/platforms/aws/local-runtime/config.yaml \
     --raw-contract /home/hadoop/workspace/contracts/schemas/raw/datasets.yaml \
     --processed-contract /home/hadoop/workspace/contracts/schemas/processed/datasets.yaml \
     --curated-contract /home/hadoop/workspace/contracts/schemas/curated/datasets.yaml \

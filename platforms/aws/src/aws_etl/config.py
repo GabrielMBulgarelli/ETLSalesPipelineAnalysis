@@ -139,7 +139,7 @@ def load_config(
     environment = os.environ if environ is None else environ
     if config_path is None:
         configured_path = environment.get("AWS_ETL_CONFIG_FILE")
-        config_path = configured_path or Path(__file__).resolve().parents[2] / "runtime/local/config.yaml"
+        config_path = configured_path or Path(__file__).resolve().parents[2] / "local-runtime/config.yaml"
     values: dict[str, Any] = {**DEFAULTS, **_read_yaml(Path(config_path))}
     for key, variable_names in ENVIRONMENT_KEYS.items():
         for variable_name in variable_names:

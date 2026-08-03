@@ -1,19 +1,32 @@
-# AWS implementation and local reproduction guide
+# <span style="font-size: 28px;">E-Commerce Sales Analysis and Optimization using AWS Analytics Services</span>
 
-This implementation provides the data and infrastructure layers for the **AWS-First E-commerce Data Engineering Platform**: an Amazon S3 lake, four AWS Glue 5 PySpark jobs, 16 Glue Data Catalog tables, a 32-state Step Functions workflow, Redshift Serverless with SCD Type 2, six AWS CDK stacks, least-privilege IAM, private networking, CloudWatch, and a PostgreSQL local warehouse.
+[Project overview](../../README.md) · [Azure implementation](../azure/README.md)
 
-The same `aws_etl` transformation modules run in the official Glue 5 Docker image locally and are packaged for managed Glue. LocalStack provides S3-compatible storage, the Python runner mirrors workflow decisions, and PostgreSQL validates warehouse publication. AWS infrastructure synthesis is credential-free and does not deploy resources.
+## Overview
 
-## Supported environment
+This implementation provides a contract-driven batch pipeline for the Olist e-commerce dataset using Amazon S3, AWS Glue 5, Step Functions, Glue Data Catalog, and a Redshift Serverless warehouse design. The same transformation package runs in the official Glue 5 container for local validation, while LocalStack and PostgreSQL provide credential-free substitutes for storage and warehouse publication.
 
-- Linux x86_64
-- Python 3.11 or newer
-- Docker Engine with Docker Compose v2
-- Node.js 22 and npm
-- `curl`
-- A complete Olist dataset directory outside Git for end-to-end execution
+Local execution used LocalStack, Glue Docker, and PostgreSQL; replay, SCD2, publication, and recovery were deterministically validated; six AWS CDK stacks synthesized; no AWS resources were deployed.
 
-Install the local package and pinned CDK dependencies:
+## Dataset
+
+The [Olist dataset](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) contains marketplace orders, products, customers, sellers, locations, payments, and reviews from approximately 100,000 Brazilian orders placed between 2016 and 2018. The pipeline accepts exactly nine canonical CSV files and rejects missing, duplicate, case-ambiguous, or unexpected inputs before publishing raw objects, manifests, or audit evidence.
+
+```text
+customers ─┐
+orders ────┼── order items ── products ── category translation
+payments ──┤         │
+reviews ───┤         └──────── sellers
+geolocation┘
+```
+
+The complete dataset stays outside Git. Versioned [schemas](../../contracts/schemas/README.md), [quality and replay rules](../../contracts/rules/README.md), a deterministic fixture, and expected evidence define repository behavior without bundling source data.
+
+## Prerequisites
+
+The supported local environment is Linux x86_64 with Python 3.11 or newer, Docker Engine with Docker Compose v2, Node.js 22, npm, `curl`, and a complete Olist dataset directory outside the repository.
+
+Install the Python package and pinned CDK dependencies from the repository root:
 
 ```bash
 python3 -m venv .venv
@@ -23,167 +36,211 @@ python3 -m pip install -e platforms/aws
 make aws-cdk-install
 ```
 
-Copy [`.env.example`](../../.env.example) to an ignored `.env` if you need to override local defaults. The committed `test` credentials are LocalStack-only dummy values; configuration rejects them outside the `local` profile. PostgreSQL passwords are passed through the environment and are not embedded in SQL.
+Copy [`.env.example`](../../.env.example) to an ignored `.env` only when local defaults need overriding. LocalStack test credentials are rejected outside the local profile, PostgreSQL passwords come from the environment, and cloud designs use IAM and managed secrets rather than embedded credentials.
 
-## Complete local reproduction
-
-Start LocalStack and PostgreSQL, execute all pipeline stages, publish the warehouse, validate it, and inspect status:
+For a complete local run:
 
 ```bash
 make aws-local-up
 make aws-postgres-up
-make aws-local-run \
-  DATASET_DIR=/absolute/path/to/olist \
-  BATCH_ID=project-run \
-  WAREHOUSE=1
+make aws-local-run DATASET_DIR=/absolute/path/to/olist BATCH_ID=project-run WAREHOUSE=1
 make aws-postgres-validate BATCH_ID=project-run
 make aws-local-status
 make aws-postgres-status
 ```
 
-`aws-local-run` is the authoritative local orchestration path. It discovers the nine canonical files, seeds immutable raw objects and manifests, classifies replay, acquires an execution claim, processes raw data, validates quality and relationships, builds curated datasets, and optionally publishes PostgreSQL. The warehouse step remains separate from the terminal source-pipeline evidence so warehouse failure cannot rewrite prior curation evidence.
+Stage-level seed, process, validate, curate, and warehouse commands are available in the [Makefile](../../Makefile). `make aws-postgres-clean` is the explicit destructive cleanup; ordinary down commands retain evidence volumes.
 
-Use stage-level commands for diagnosis or controlled reruns:
+## Data Architecture
 
-```bash
-make aws-local-seed DATASET_DIR=/absolute/path/to/olist BATCH_ID=project-run
-make aws-local-process BATCH_ID=project-run
-make aws-local-validate BATCH_ID=project-run
-make aws-local-curate BATCH_ID=project-run
-make aws-postgres-load BATCH_ID=project-run
-make aws-postgres-validate BATCH_ID=project-run
-```
+The implementation uses a governed lake and warehouse publication boundary:
 
-Stop services without deleting retained volumes:
-
-```bash
-make aws-postgres-down
-make aws-local-down
-```
-
-`make aws-postgres-clean` is the explicit destructive command for the PostgreSQL container and named volume. No implicit cleanup command removes evidence.
-
-## Accepted source files
-
-`DATASET_DIR` is searched recursively and must contain exactly one file with each case-sensitive canonical name:
-
-- `olist_customers_dataset.csv`
-- `olist_orders_dataset.csv`
-- `olist_order_items_dataset.csv`
-- `olist_order_payments_dataset.csv`
-- `olist_order_reviews_dataset.csv`
-- `olist_products_dataset.csv`
-- `olist_sellers_dataset.csv`
-- `olist_geolocation_dataset.csv`
-- `product_category_name_translation.csv`
-
-Missing, duplicate, case-ambiguous, and unexpected CSV files fail before raw, manifest, or audit publication. The complete dataset remains outside Git; the repository contains only a deterministic contract fixture.
-
-## Data-lake and curation behavior
+- Amazon S3 and LocalStack organize immutable raw objects, processed and rejected batches, curated Parquet datasets, quality results, manifests, audit records, and warehouse staging.
+- Four Glue 5 PySpark jobs share the `aws_etl` modules between local and cloud entrypoints.
+- Sixteen explicit Glue Data Catalog definitions describe the curated outputs.
+- Step Functions defines a 32-state Standard Workflow for claims, replay, processing, quality routing, warehouse loading, and terminal evidence.
+- PostgreSQL validates current-snapshot publication locally; Redshift Serverless has separate native SQL and deterministic SCD2 validation.
+- Six CDK stacks define private storage, catalog, processing, orchestration, warehouse, IAM, managed secrets, CloudWatch observability, and bounded-capacity controls.
 
 ```text
-s3://ecommerce-sales-local/
-├── raw/<dataset>/content_sha256=<sha256>/
-├── processed/<dataset>/batch_id=<batch-id>/
-├── curated/{dimensions,facts,aggregations}/
-├── rejected/<dataset>/batch_id=<batch-id>/
-├── quality/
-├── manifests/
-├── audit/
-└── staging/
+Olist CSV files
+  -> S3 raw objects + immutable manifests
+  -> Glue processing + rejected rows
+  -> quality and referential-integrity decision
+  -> curated Parquet + Catalog metadata
+  -> attempt-isolated warehouse staging
+  -> atomic warehouse publication + audit evidence
 ```
 
-CSV inference is never used. Explicit contract schemas preserve monetary values as `decimal(10,2)` and normalize timestamps in UTC. Processing stages complete output under batch staging, verify it, publish stable Parquet prefixes, and write the terminal marker last. Rejected rows carry stable aligned reason codes and descriptions.
+## Data Flow
 
-The 16 curated datasets are six dimensions (`customer`, `product`, `seller`, `geography`, `date`, `order_status`), two facts (`sales`, `reviews`), and eight aggregates (`sales_by_state`, `sales_by_category`, `monthly_sales`, `order_status`, `cross_state_analysis`, `seller_performance`, `size_analysis`, `payment_methods`). Sales grain is `(OrderID, OrderItemID)`; review grain is `(OrderID, ReviewID)` without invented product attribution.
+The pipeline discovers the nine source files, hashes their content, writes versioned raw objects, and records an immutable manifest. `ProcessRaw` applies explicit schemas, UTC timestamp normalization, deterministic cleansing and deduplication, and stable rejected-row reason codes. `ValidateProcessed` checks quality thresholds and cross-dataset relationships before `BuildCurated` produces dimensions, facts, and aggregates. `LoadWarehouse` verifies curation evidence before staging and publication.
 
-## Replay and orchestration
-
-The authoritative AWS definition is [`orchestration/pipeline.asl.json`](orchestration/pipeline.asl.json). Its 32 states carry batch, attempt, submission, storage prefix, pipeline-version, and provider-evidence context through replay classification, resume, four synchronous Glue tasks, quality routing, conditional terminal writes, and success/failure states.
-
-- A matching completed replay records an immutable no-op.
-- A partial run resumes only if every earlier marker and expected Parquet output matches immutable evidence.
-- Changed content under an existing batch ID fails.
-- Explicit transient Glue failures use bounded retry; deterministic validation, access, invalid-input, and quality failures do not retry.
-- Completion/failure objects are create-only and accept an existing object only when submission identity and canonical evidence hash agree.
-- A deterministic failure can be reused; every submission still records new audit evidence.
-
-Validate the graph, four deployment tokens, retry boundary, conditional writes, and local classification logic with `make aws-state-machine-validate`. Generate a deterministic, Step Functions-safe execution name with:
-
-```bash
-make aws-execution-name ENVIRONMENT=dev BATCH_ID=project-run ATTEMPT=1
+```text
+ProcessRaw
+    │
+    v
+ValidateProcessed ── quality failure ──> immutable failure evidence
+    │ accepted
+    v
+BuildCurated
+    │
+    v
+LoadWarehouse ──> completed registry + immutable completion evidence
 ```
 
-## Local PostgreSQL warehouse
+A matching replay is an immutable no-op. A partial run resumes only when earlier markers and Parquet outputs match recorded evidence; changed content under an existing batch ID is a conflict. Transient Glue failures use bounded retry, while validation, access, input, and quality failures do not. Terminal objects are create-only, and recovery rejects disagreement between warehouse and object-store evidence.
 
-PostgreSQL 16 runs on `127.0.0.1:${POSTGRES_PORT:-54329}` with separate bootstrap-owner and non-superuser ETL roles. Its `staging`, `warehouse`, `analytics`, and `audit` schemas validate:
+The authoritative workflow is [`orchestration/pipeline.asl.json`](orchestration/pipeline.asl.json). Validate its graph, job tokens, retry boundary, conditional writes, and replay classifier with `make aws-state-machine-validate`.
 
-- attempt-isolated Spark JDBC staging for all 16 curated datasets;
-- schema, count, grain, relationship, hash, payment, and aggregate checks;
-- stable surrogate keys for existing business identifiers;
-- one advisory-lock-protected publication transaction;
-- atomic facts, aggregate snapshots, completed registry, and audit evidence;
-- rollback on publication errors, no-op replay, and completed-batch conflict handling.
+## Dimensional Model
 
-PostgreSQL publishes a current snapshot and does not claim SCD2 engine parity. Redshift history behavior has separate SQL and deterministic simulation.
+The curated layer contains six dimensions and two facts. Customer, product, seller, and geography use SCD2 tracked-attribute hashes and half-open effective intervals in the Redshift design; date and order status are static. PostgreSQL intentionally publishes a current snapshot and validates atomicity, stable surrogate keys, replay equality, conflict handling, and rollback rather than claiming Redshift engine parity.
 
-## Redshift Serverless design
+```text
+dim_customer ─┐
+dim_product ──┤
+dim_seller ───┼── fact_sales
+dim_geography ┤
+dim_date ─────┤
+dim_status ───┘
 
-[`sql/redshift`](sql/redshift/) contains six ordered, Redshift-native files for schemas, all 16 staging tables, six dimensions, two facts, eight analytics tables, audit structures, validation, and the `audit.publish_warehouse` procedure. The cloud loader verifies curation evidence, emits Parquet COPY manifests, performs 16 attempt-isolated COPY operations, binds staged rows to a publication fingerprint, and issues one parameterized Data API `CALL`.
-
-Customer, product, seller, and geography are SCD2 dimensions with tracked-attribute hashes and half-open effective intervals. Date and order status are static. Sales use purchase time to resolve dimension versions; reviews use review-creation time and preserve the deliberate absence of product/seller/geography attribution. Duplicate keys, interval conflicts, and zero or multiple fact-time matches fail deterministically.
-
-The private Redshift design uses a dedicated `/24` VPC, three isolated `/27` subnets, no public subnet, internet gateway, or NAT gateway, an S3 gateway endpoint, and enhanced VPC routing. Capacity is fixed at 8 base RPU and 16 maximum RPU, with a 40 RPU-hour monthly usage-limit deactivation action. Distribution and sort choices are provisional, not empirically optimized.
-
-See [Redshift Serverless warehouse design](../../platforms/aws/warehouse-design.md) for publication, recovery, IAM, and validation details.
-
-## CDK infrastructure
-
-Six stacks synthesize in dependency order:
-
-1. `StorageStack` — encrypted, versioned, private S3 bucket and lifecycle controls.
-2. `CatalogStack` — curated database and 16 explicit table definitions.
-3. `WarehouseStack` — private Redshift Serverless, networking, COPY role, logs, and capacity controls.
-4. `ProcessingStack` — four Glue 5 jobs, assets, runtime configuration, and per-job roles.
-5. `OrchestrationStack` — 32-state Standard Workflow and execution role.
-6. `ObservabilityStack` — CloudWatch log retention and actionless failure alarms.
-
-Build and synthesize without AWS credentials:
-
-```bash
-make aws-cdk-build
-make aws-cdk-synth
+dim_customer ─┬── fact_reviews
+dim_date ─────┘
 ```
 
-Defaults are `environment=dev`, `awsRegion=us-east-1`, two `G.1X` Glue workers, a 60-minute timeout, and concurrency one. Allowed environments are `dev`, `staging`, and `prod`; an optional `permissionsBoundaryArn` applies an organization boundary to Glue and Step Functions roles. CDK context may change supported settings, but this repository intentionally provides no deploy target or credentialed CI job.
+The sales fact has one row per order item, identified by `(OrderID, OrderItemID)`. The review fact has one row per order and review pair, identified by `(OrderID, ReviewID)`; reviews do not invent product, seller, or geography attribution. Redshift resolves dimension versions using purchase time for sales and review-creation time for reviews.
 
-## Catalog metadata
+Attempt-isolated PostgreSQL and Redshift staging validates schema, nullability, counts, grains, relationships, hashes, payment semantics, and aggregates before one publication transaction. Redshift rejects duplicate keys, conflicting intervals, and zero or multiple event-time dimension matches.
 
-Authoritative cloud templates are under [`catalog/tables`](catalog/tables) and use `${AWS_ETL_BUCKET}` for deployment-time rendering. Matching local manifests under [`runtime/local/catalog-manifests`](runtime/local/catalog-manifests) point to local S3-compatible locations. They prove schema equivalence only; they are not a running Glue Data Catalog.
+## Aggregation Tables
 
-```bash
-make catalog-generate
-make catalog-validate
+Eight curated aggregates support common analytical questions while retaining deterministic definitions from the shared contracts:
+
+```text
+sales_by_state        sales_by_category
+monthly_sales         order_status
+cross_state_analysis  seller_performance
+size_analysis         payment_methods
 ```
 
-## Credential-free validation
+The aggregates cover geography, product-category performance, monthly trends, current order status, interstate commerce, seller operations, product size, and representative payment method. Payment-method attribution selects one payment type deterministically at item grain and does not treat payment value as allocated item revenue.
 
-Run the complete final gate from the repository root:
+## Glue Job Pipeline
+
+The four Glue 5 jobs are deployed as separate entrypoints while reusing the same tested transformation modules:
+
+```text
+ProcessRaw
+  -> ValidateProcessed
+  -> BuildCurated
+  -> LoadWarehouse
+```
+
+`ProcessRaw` publishes processed and rejected Parquet only after staging verification. `ValidateProcessed` gates downstream work on quality and referential integrity. `BuildCurated` publishes all 16 analytical datasets and its terminal marker last. `LoadWarehouse` creates 16 COPY manifests, loads attempt-isolated staging, binds the input to a publication fingerprint, and calls the warehouse publication procedure.
+
+The local Python runner mirrors the workflow decisions. Build an execution-safe name with `make aws-execution-name ENVIRONMENT=dev BATCH_ID=project-run ATTEMPT=1`, and inspect individual stages with `make aws-local-seed`, `make aws-local-process`, `make aws-local-validate`, `make aws-local-curate`, and `make aws-postgres-load`.
+
+## <span style="font-size: 24px;">Analysis</span>
+
+The eight curated aggregates expose the following analytical views. Detailed sample evidence is recorded in [AWS project evidence](../../platforms/aws/validation-evidence.md).
+
+### <span style="font-size: 20px;">Analysis #1: Geographic Sales Distribution</span>
+
+`sales_by_state` provides order count, unique-customer count, item revenue, average item price, and average delivery time by customer state.
+
+### <span style="font-size: 20px;">Analysis #2: Product Category Performance</span>
+
+`sales_by_category` provides order count, unique-customer count, item revenue, average item price, average delivery time, and delayed-order count by product category.
+
+### <span style="font-size: 20px;">Analysis #3: Monthly Sales Trends</span>
+
+`monthly_sales` summarizes monthly revenue, order volume, and average ticket value to support seasonality and growth analysis.
+
+### <span style="font-size: 20px;">Analysis #4: Order Status Analysis</span>
+
+`order_status` provides order count, unique-customer count, and item revenue by category and current order status; it does not model status-transition history.
+
+### <span style="font-size: 20px;">Analysis #5: Cross-State Commerce Analysis</span>
+
+`cross_state_analysis` measures interstate order volume, delivery time, and regional relationships for logistics analysis.
+
+### <span style="font-size: 20px;">Analysis #6: Seller Performance Metrics</span>
+
+`seller_performance` reports order count, item revenue, average freight cost, delivery time, delayed-order count, and delay rate without attributing review scores to sellers.
+
+### <span style="font-size: 20px;">Analysis #7: Product Size Impact Analysis</span>
+
+`size_analysis` relates product dimensions to order volume and revenue by category. The additional `payment_methods` aggregate reports item-grain value against a deterministic representative payment type.
+
+## <span style="font-size: 24px;">Dimensional Tables</span>
+
+The warehouse contains six dimensions:
+
+<table>
+  <tr>
+    <th align="left">Dimension</th>
+    <th align="left">Description</th>
+  </tr>
+  <tr>
+    <td>Customer</td>
+    <td>Customer identifiers, location, and tracked attributes</td>
+  </tr>
+  <tr>
+    <td>Product</td>
+    <td>Product category, measurements, and tracked attributes</td>
+  </tr>
+  <tr>
+    <td>Seller</td>
+    <td>Seller identifiers, location, and tracked attributes</td>
+  </tr>
+  <tr>
+    <td>Geography</td>
+    <td>Postal-code, city, and state relationships</td>
+  </tr>
+  <tr>
+    <td>Date</td>
+    <td>Static calendar attributes for time-based analysis</td>
+  </tr>
+  <tr>
+    <td>Order Status</td>
+    <td>Static order-status descriptions</td>
+  </tr>
+</table>
+
+Four business dimensions use Redshift SCD2 history. The SQL, publication procedure, IAM boundary, recovery rules, and deterministic evidence are documented in the [Redshift Serverless warehouse design](../../platforms/aws/warehouse-design.md).
+
+## <span style="font-size: 24px;">Fact Tables</span>
+
+The warehouse publishes two facts after dimension keys are resolved:
+
+<table>
+  <tr>
+    <th align="left">Fact Table</th>
+    <th align="left">Description</th>
+  </tr>
+  <tr>
+    <td>Sales Fact Table</td>
+    <td>One row per order item with item price, freight, delivery, status, and dimensional keys</td>
+  </tr>
+  <tr>
+    <td>Reviews Fact Table</td>
+    <td>One row per order and review pair linked to order, customer, and review-creation date</td>
+  </tr>
+</table>
+
+Run the credential-free final gate with:
 
 ```bash
 make project-validate
 ```
 
-The gate compiles Python, validates baseline/contracts and all 16 catalog tables, validates the 32-state workflow and replay classifier, inspects Redshift SQL, runs the SCD2/replay simulation, compiles TypeScript, synthesizes six CDK stacks, and checks repository hygiene. CI runs the same practical checks and never requests cloud credentials.
+It compiles Python, checks baseline contracts and all 16 Catalog definitions, validates the 32-state workflow and replay logic, inspects Redshift SQL, runs SCD2/publication/recovery simulations, compiles TypeScript, synthesizes six CDK stacks, and checks links, secrets, and tracked-file hygiene. The evidence boundary distinguishes locally executed behavior, deterministic checks, and synthesized infrastructure; it does not claim managed execution, measured cost, or empirical Redshift performance.
 
-The pinned CDK dependency tree currently reports one high-severity transitive `brace-expansion` advisory (`GHSA-mh99-v99m-4gvg`). This disclosure is preserved; dependency remediation is intentionally outside documentation finalization.
+## Future Enhancements
 
-## Evidence boundary
-
-| Level | What it establishes |
-|---|---|
-| Executed locally | S3-compatible ingestion, Glue-container transformations, replay decisions, curated Parquet, and PostgreSQL publication behavior |
-| Deterministically validated | Contracts, metadata, workflow graph, retry/replay rules, Redshift SQL, SCD2 interval behavior, publication equality, and recovery simulation |
-| Synthesized, not deployed | S3, Glue, Catalog, Step Functions, Redshift Serverless, IAM, VPC, Secrets Manager, and CloudWatch resource definitions |
-
-No managed AWS execution, measured AWS cost, production deployment, or empirical Redshift performance is claimed.
+- Deploy a budget-capped AWS sandbox and compare managed outputs with the Azure implementation against identical inputs.
+- Capture managed Glue, Step Functions, Redshift, IAM, networking, Secrets Manager, and CloudWatch execution evidence.
+- Measure duration and cost at fixture and full-data scale before adjusting Glue workers or Redshift capacity.
+- Validate Redshift query plans, skew, distribution, sort behavior, backup, restore, and disaster recovery.
+- Expand operational alert routing and production runbooks after a managed exercise.

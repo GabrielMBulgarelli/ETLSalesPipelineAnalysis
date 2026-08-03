@@ -723,7 +723,8 @@ def validate_fixture(contracts_root: Path, fixture: str) -> dict[str, Any]:
     catalog = package["catalogs"]["raw"]
     rules = package["rules"]
     severities = package["severities"]
-    fixture_root = contracts_root / "fixtures" / fixture / "raw"
+    fixtures_root = contracts_root / "fixtures"
+    fixture_root = fixtures_root if fixture == "baseline" else fixtures_root / fixture
     violations: list[dict[str, Any]] = []
     rows_by_dataset: dict[str, list[dict[str, str]]] = {}
     keys_by_dataset: dict[str, set[tuple[str, ...]]] = {}

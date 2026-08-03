@@ -50,7 +50,7 @@ from aws_etl.storage import (
 from aws_etl.writers import terminal_summary_key, verify_marker_outputs
 
 
-ROOT = Path(__file__).resolve().parents[4]
+ROOT = Path(__file__).resolve().parents[3]
 RUN_GLUE = Path(__file__).with_name("run_glue_job.sh")
 BATCH_ID_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}")
 STAGES = ("ProcessRaw", "ValidateProcessed", "BuildCurated")

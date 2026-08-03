@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMPOSE_FILE="${SCRIPT_DIR}/docker-compose.yml"
-SQL_DIR="${SCRIPT_DIR}/../../sql/local-postgres"
+SQL_DIR="${SCRIPT_DIR}/../sql/local-postgres"
 
 : "${POSTGRES_DB:=ecommerce_sales}"
 : "${POSTGRES_ADMIN_USER:=ecommerce_admin}"

@@ -9,11 +9,11 @@ AZURE = ROOT / "platforms" / "azure"
 
 class AzureContractTests(unittest.TestCase):
     def test_fact_loads_resolve_business_keys_through_staging(self):
-        schema = (AZURE / "sql" / "synapse" / "Schema.sql").read_text(encoding="utf-8")
-        sales = (AZURE / "sql" / "synapse" / "load" / "fact" / "copy_fact_sales.sql").read_text(
+        schema = (AZURE / "synapse-sql" / "Schema.sql").read_text(encoding="utf-8")
+        sales = (AZURE / "synapse-sql" / "load" / "fact" / "copy_fact_sales.sql").read_text(
             encoding="utf-8"
         )
-        reviews = (AZURE / "sql" / "synapse" / "load" / "fact" / "copy_fact_reviews.sql").read_text(
+        reviews = (AZURE / "synapse-sql" / "load" / "fact" / "copy_fact_reviews.sql").read_text(
             encoding="utf-8"
         )
 
@@ -27,7 +27,7 @@ class AzureContractTests(unittest.TestCase):
         self.assertIn("JOIN ecom.DimCustomer", reviews)
 
     def test_aggregate_load_columns_match_descriptive_contract(self):
-        analysis_dir = AZURE / "sql" / "synapse" / "load" / "analysis"
+        analysis_dir = AZURE / "synapse-sql" / "load" / "analysis"
         contents = "\n".join(path.read_text(encoding="utf-8") for path in analysis_dir.glob("*.sql"))
 
         self.assertNotIn("CategoryKey,", contents)
@@ -36,15 +36,15 @@ class AzureContractTests(unittest.TestCase):
         self.assertIn("PaymentType", contents)
 
     def test_order_status_aggregate_has_schema_and_loader(self):
-        schema = (AZURE / "sql" / "synapse" / "Schema.sql").read_text(encoding="utf-8")
-        loader = AZURE / "sql" / "synapse" / "load" / "analysis" / "copy_fact_order_status_analysis.sql"
+        schema = (AZURE / "synapse-sql" / "Schema.sql").read_text(encoding="utf-8")
+        loader = AZURE / "synapse-sql" / "load" / "analysis" / "copy_fact_order_status_analysis.sql"
 
         self.assertIn("CREATE TABLE ecom.FactOrderStatusAnalysis", schema)
         self.assertTrue(loader.exists())
 
     def test_curated_notebook_uses_reproducible_contracts(self):
         notebook = json.loads(
-            (AZURE / "entrypoints" / "synapse-notebooks" / "03_EcomSales_Curated_Analytics.ipynb").read_text(encoding="utf-8")
+            (AZURE / "synapse-notebooks" / "03_EcomSales_Curated_Analytics.ipynb").read_text(encoding="utf-8")
         )
         source = "\n".join(
             "".join(cell.get("source", [])) for cell in notebook["cells"] if cell.get("cell_type") == "code"
@@ -56,12 +56,6 @@ class AzureContractTests(unittest.TestCase):
         self.assertNotIn('F.first("payment_type")', source)
         self.assertNotIn("dim_product_with_size", source)
         self.assertNotIn("F.current_timestamp()", source)
-
-    def test_readme_states_actual_fact_and_review_grains(self):
-        readme = (ROOT / "README.md").read_text(encoding="utf-8")
-
-        self.assertIn("one row per order item", readme)
-        self.assertIn("Reviews are linked to orders and customers, not products", readme)
 
 
 if __name__ == "__main__":

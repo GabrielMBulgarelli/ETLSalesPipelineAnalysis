@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CONTRACT_PATH = ROOT / "contracts/schemas/curated/datasets.yaml"
 CLOUD_DATABASE_PATH = ROOT / "platforms/aws/catalog/database.json"
 CLOUD_TABLE_DIR = ROOT / "platforms/aws/catalog/tables"
-LOCAL_TABLE_DIR = ROOT / "platforms/aws/runtime/local/catalog-manifests"
+LOCAL_TABLE_DIR = ROOT / "platforms/aws/local-runtime/catalog-manifests"
 
 DATABASE_NAME = "ecommerce_sales_curated"
 CLOUD_BUCKET = "${AWS_ETL_BUCKET}"
